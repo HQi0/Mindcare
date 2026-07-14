@@ -1,4 +1,4 @@
-import { NavLink, Link } from 'react-router-dom';
+import { NavLink, Link, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   Smile,
@@ -12,6 +12,7 @@ import {
   Settings,
   LogOut,
 } from 'lucide-react';
+import { logout } from '../../services/authService.js';
 
 const NAV_ITEMS = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -31,6 +32,13 @@ const NAV_ITEMS = [
  * dan seluruh halaman app lainnya lewat DashboardLayout.
  */
 export default function Sidebar() {
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login', { replace: true });
+  };
+
   return (
     <aside className="fixed left-0 top-0 h-screen w-[220px] bg-dash-sidebar border-r border-dash-border flex flex-col justify-between py-6 z-40">
       <div className="pb-8 px-6">
@@ -68,6 +76,7 @@ export default function Sidebar() {
         </Link>
         <button
           type="button"
+          onClick={handleLogout}
           className="flex items-center gap-3 px-4 py-2 text-[13.5px] font-medium text-dash-muted hover:text-dash-danger transition-colors"
         >
           <LogOut size={18} />

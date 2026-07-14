@@ -30,11 +30,20 @@ export default function RegisterForm() {
 
     setLoading(true);
     try {
-      const { token } = await register(form);
-      localStorage.setItem('mindcare_token', token);
-      navigate('/dashboard');
+      const result = await register(form);
+      
+      // Jika konfigurasi Supabase memerlukan konfirmasi email (Default Supabase)
+      if (result.token === 'email_confirmation_required') {
+        alert('Registrasi sukses! Silakan periksa kotak masuk email Anda untuk verifikasi akun sebelum masuk.');
+        navigate('/login');
+      } else {
+        // Jika auto-login aktif langsung setelah daftar
+        localStorage.setItem('mindcare_token', result.token);
+        navigate('/dashboard');
+      }
     } catch (err) {
-      setError('Registrasi gagal. Silakan coba lagi.');
+      // Menangkap pesan error spesifik (misal format email salah atau email sudah terdaftar)
+      setError(err.message || 'Registrasi gagal. Silakan coba lagi.');
     } finally {
       setLoading(false);
     }
@@ -54,10 +63,10 @@ export default function RegisterForm() {
         />
 
         <AuthInput
-          label="Email Mahasiswa"
+          label="Email"
           type="email"
           name="email"
-          placeholder="nama@universitas.ac.id"
+          placeholder="nama@email.com"
           value={form.email}
           onChange={handleChange}
           required

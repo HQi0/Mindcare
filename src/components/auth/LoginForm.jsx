@@ -35,10 +35,10 @@ export default function LoginForm() {
     <form onSubmit={handleSubmit} className="flex flex-col gap-8 w-full">
       <div className="flex flex-col gap-5 w-full">
         <AuthInput
-          label="Email Mahasiswa"
+          label="Email"
           type="email"
           name="email"
-          placeholder="nama@universitas.ac.id"
+          placeholder="nama@email.com"
           value={form.email}
           onChange={handleChange}
           required
