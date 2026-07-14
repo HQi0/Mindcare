@@ -1,9 +1,11 @@
+import { getCurrentDatabaseUser } from './authService.js';
+
 const mockDelay = (data, ms = 300) =>
   new Promise((resolve) => setTimeout(() => resolve({ data }), ms));
 
 const DUMMY_PROFILE = {
-  alias: 'Pahlawan Sunyi',
-  subtitle: 'Mahasiswa Psikologi • Angkatan 2021',
+  alias: 'Pengguna MindCare',
+  subtitle: 'Akun aktif',
   anonymousId: 'MC-7729',
   wellbeingScore: 82,
   wellbeingNote: 'Bagus! Kamu telah konsisten melakukan check-in selama 12 hari terakhir.',
@@ -26,7 +28,16 @@ const DUMMY_SESSIONS = [
 ];
 
 export async function getProfile() {
-  const res = await mockDelay(DUMMY_PROFILE);
+  const storedUser = await getCurrentDatabaseUser();
+  const res = await mockDelay(
+    storedUser
+      ? {
+          ...DUMMY_PROFILE,
+          alias: storedUser.fullName || storedUser.name,
+          subtitle: storedUser.email || DUMMY_PROFILE.subtitle,
+        }
+      : DUMMY_PROFILE
+  );
   return res.data;
 }
 

@@ -1,9 +1,10 @@
 // import api from './api'; // aktifkan saat backend siap
+import { getCurrentDatabaseUser } from './authService.js';
 
 const mockDelay = (data, ms = 300) =>
   new Promise((resolve) => setTimeout(() => resolve({ data }), ms));
 
-const DUMMY_USER = { id: 'usr_dummy', name: 'Adid', avatarInitials: 'AD' };
+const DUMMY_USER = { id: 'usr_dummy', name: 'Pengguna MindCare', avatarInitials: 'PM' };
 
 const DUMMY_STATS = [
   {
@@ -104,7 +105,22 @@ const DUMMY_RESOURCES = [
 
 export async function getCurrentUser() {
   // const res = await api.get('/me');
-  const res = await mockDelay(DUMMY_USER);
+  const storedUser = await getCurrentDatabaseUser();
+  const res = await mockDelay(
+    storedUser
+      ? {
+          ...DUMMY_USER,
+          ...storedUser,
+          avatarInitials: storedUser.fullName
+            .split(' ')
+            .filter(Boolean)
+            .slice(0, 2)
+            .map((part) => part[0])
+            .join('')
+            .toUpperCase(),
+        }
+      : DUMMY_USER
+  );
   return res.data;
 }
 

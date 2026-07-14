@@ -1,7 +1,23 @@
 import { Search, Bell } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import useFetch from '../../hooks/useFetch.js';
+import { getCurrentUser } from '../../services/dashboardService.js';
+
+function getInitials(name) {
+  if (!name) return 'MC';
+
+  return name
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join('')
+    .toUpperCase();
+}
 
 export default function DashboardTopbar() {
+  const { data: user } = useFetch(getCurrentUser, []);
+
   return (
     <header className="fixed top-0 left-[220px] right-0 h-14 bg-dash-sidebar border-b border-dash-border flex items-center justify-between px-6 z-30">
       <div className="flex-1 max-w-[256px]">
@@ -37,7 +53,7 @@ export default function DashboardTopbar() {
             to="/profile"
             className="size-8 rounded-full bg-dash-primary/10 text-dash-primary flex items-center justify-center text-xs font-bold border border-dash-border"
           >
-            AD
+            {getInitials(user?.name)}
           </Link>
         </div>
       </div>

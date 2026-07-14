@@ -1,4 +1,16 @@
-import { Star, Video, MapPin } from 'lucide-react';
+import { Star, Video } from 'lucide-react';
+
+function getInitials(name) {
+  if (!name) return 'KC';
+
+  return name
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join('')
+    .toUpperCase();
+}
 
 export function BookingStepper({ step }) {
   const steps = ['Pilih Konselor', 'Pilih Jadwal', 'Konfirmasi'];
@@ -29,20 +41,41 @@ export function BookingStepper({ step }) {
 
 export function CounselorCard({ counselor, selected, onSelect }) {
   const isSelected = selected === counselor.id || counselor.selected;
+  const isAvailable = counselor.available !== false;
   return (
     <button
       type="button"
+      disabled={!isAvailable}
       onClick={() => onSelect(counselor.id)}
       className={`flex-1 text-left rounded-xl p-4 flex flex-col gap-4 transition-colors ${
-        isSelected ? 'bg-white border-2 border-dash-primary shadow-sm' : 'bg-white border border-auth-card'
-      }`}
+        isSelected ? 'bg-white border border-auth-card ring-2 ring-dash-primary shadow-sm' : 'bg-white border border-auth-card'
+      } ${!isAvailable ? 'opacity-50 cursor-not-allowed' : ''}`}
     >
       <div className="flex gap-4">
-        <span className="size-16 rounded-lg bg-dash-primary/20 shrink-0" />
+        <span className="size-16 rounded-full overflow-hidden bg-dash-primary/10 border border-auth-card shrink-0 flex items-center justify-center">
+          {counselor.avatarUrl ? (
+            <img
+              src={counselor.avatarUrl}
+              alt={counselor.name}
+              className="size-full object-cover"
+              onError={(event) => {
+                event.currentTarget.style.display = 'none';
+                const fallback = event.currentTarget.parentElement?.querySelector('[data-fallback]');
+                if (fallback) fallback.style.display = 'flex';
+              }}
+            />
+          ) : null}
+          <span
+            data-fallback
+            className={`size-full items-center justify-center text-sm font-semibold text-dash-primary ${counselor.avatarUrl ? 'hidden' : 'flex'}`}
+          >
+            {getInitials(counselor.name)}
+          </span>
+        </span>
         <div>
           <div className="flex items-center gap-2">
             <p className="text-sm font-semibold text-dash-primary">{counselor.name}</p>
-            {isSelected && (
+            {isSelected && isAvailable && (
               <span className="rounded-full bg-dash-success text-white text-[10px] font-bold px-2 py-0.5 uppercase">
                 Selected
               </span>
@@ -61,11 +94,11 @@ export function CounselorCard({ counselor, selected, onSelect }) {
       </div>
       <div className="border-t border-auth-card pt-3 flex items-center justify-between">
         <span className="flex items-center gap-1.5 text-xs text-dash-muted">
-          {counselor.mode ? <MapPin size={13} /> : <Video size={12} />}
-          {counselor.mode || 'Online & Tatap Muka'}
+          <Video size={12} />
+          {isAvailable ? counselor.mode || 'Online Saja' : 'Tidak Tersedia'}
         </span>
-        <span className={`rounded-lg px-4 py-1.5 text-sm font-semibold text-center ${isSelected ? 'bg-[#2563eb] text-[#eeefff]' : 'bg-dash-primary text-white'}`}>
-          {isSelected ? 'Terpilih' : 'Pilih'}
+        <span className={`rounded-lg px-4 py-1.5 text-sm font-semibold text-center ${!isAvailable ? 'bg-[#eceef0] text-dash-linkMuted' : isSelected ? 'bg-[#2563eb] text-[#eeefff]' : 'bg-dash-primary text-white'}`}>
+          {!isAvailable ? 'Penuh' : isSelected ? 'Terpilih' : 'Pilih'}
         </span>
       </div>
     </button>

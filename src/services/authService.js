@@ -3,19 +3,78 @@ import { supabase } from '../lib/supabaseClient'; // Pastikan jalur foldernya be
 const mockDelay = (data, ms = 500) =>
   new Promise((resolve) => setTimeout(() => resolve({ data }), ms));
 
+const AUTH_TOKEN_KEY = 'mindcare_token';
+
+function buildDisplayName(user) {
+  if (user?.full_name) return user.full_name;
+  if (user?.user_metadata?.full_name) return user.user_metadata.full_name;
+  if (user?.user_metadata?.name) return user.user_metadata.name;
+  if (user?.name) return user.name;
+
+  const emailName = user?.email?.split('@')?.[0];
+  if (!emailName) return 'Pengguna MindCare';
+
+  return emailName
+    .replace(/[._-]+/g, ' ')
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function normalizeUser(user, fallbackEmail) {
+  const email = user?.email ?? fallbackEmail ?? '';
+  const fullName = buildDisplayName({ ...user, email });
+
+  return {
+    id: user?.id ?? 'usr_dummy',
+    email,
+    name: fullName,
+    fullName,
+  };
+}
+
+export function setStoredAuth({ token, user }) {
+  if (token) {
+    localStorage.setItem(AUTH_TOKEN_KEY, token);
+  }
+}
+
+export function clearStoredAuth() {
+  localStorage.removeItem(AUTH_TOKEN_KEY);
+}
+
+export async function getCurrentDatabaseUser() {
+  const { data, error } = await supabase.auth.getUser();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  if (!data?.user) {
+    return null;
+  }
+
+  return normalizeUser(data.user);
+}
+
 /**
  * Login dengan email & password.
  * @param {{ email: string, password: string }} payload
  */
 export async function login(payload) {
-  // Ketika backend siap:
-  // const res = await api.post('/auth/login', payload);
-  // return res.data;
-  const res = await mockDelay({
-    user: { id: 'usr_dummy', email: payload.email, name: 'Mahasiswa Dummy' },
-    token: 'dummy-jwt-token',
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email: payload.email,
+    password: payload.password,
   });
-  return res.data;
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const user = normalizeUser(data.user);
+  const token = data?.session?.access_token || '';
+
+  setStoredAuth({ token, user });
+
+  return { user, token };
 }
 
 /**
@@ -43,10 +102,18 @@ export async function register(payload) {
     throw new Error(error.message);
   }
 
+  const user = normalizeUser(data.user ?? {
+    id: data.user?.id,
+    email: payload.email,
+    user_metadata: { full_name: payload.name },
+  });
+
+  setStoredAuth({ token: data?.session?.access_token, user });
+
   // Mengembalikan format struktur data token dan user agar cocok dengan RegisterForm
   return {
     token: data?.session?.access_token || 'email_confirmation_required',
-    user: data.user
+    user,
   };
 }
 
@@ -54,12 +121,13 @@ export async function register(payload) {
 export async function loginAsGuest() {
   // const res = await api.post('/auth/guest');
   const res = await mockDelay({
-    user: { id: 'usr_guest', name: 'Tamu Anonim' },
+    user: { id: 'usr_guest', name: 'Tamu Anonim', fullName: 'Tamu Anonim' },
     token: 'dummy-guest-token',
   });
   return res.data;
 }
 
 export async function logout() {
-  localStorage.removeItem('mindcare_token');
+  await supabase.auth.signOut();
+  clearStoredAuth();
 }

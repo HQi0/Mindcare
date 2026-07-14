@@ -1,10 +1,24 @@
 import { ShieldCheck, SlidersHorizontal, Laptop, Smartphone, Download, AlertTriangle, ChevronRight } from 'lucide-react';
 
+function getInitials(name) {
+  if (!name) return 'MC';
+
+  return name
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join('')
+    .toUpperCase();
+}
+
 export function IdentityCard({ profile }) {
   if (!profile) return null;
   return (
     <div className="flex-1 bg-white border border-auth-card rounded-xl p-6 flex items-center gap-6 relative overflow-hidden">
-      <span className="size-24 rounded-full bg-[#eceef0] border-4 border-[#eceef0] shrink-0" />
+      <span className="size-24 rounded-full bg-dash-primary/10 border-4 border-[#eceef0] shrink-0 flex items-center justify-center text-2xl font-semibold text-dash-primary">
+        {getInitials(profile.alias)}
+      </span>
       <div className="flex flex-col gap-1">
         <h2 className="text-[22px] leading-8 font-semibold tracking-[-0.22px] text-dash-text">{profile.alias}</h2>
         <p className="text-dash-muted text-base">{profile.subtitle}</p>

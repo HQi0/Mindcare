@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
 import AuthInput from '../common/AuthInput.jsx';
 import SocialAuthOptions from './SocialAuthOptions.jsx';
-import { register } from '../../services/authService.js';
+import { register, setStoredAuth } from '../../services/authService.js';
 
 // NOTE: Desain Figma hanya menyediakan tab "Daftar" tanpa detail
 // field, jadi form ini dibuat mengikuti gaya visual Login Form
@@ -34,11 +34,12 @@ export default function RegisterForm() {
       
       // Jika konfigurasi Supabase memerlukan konfirmasi email (Default Supabase)
       if (result.token === 'email_confirmation_required') {
+        setStoredAuth({ token: result.token, user: result.user });
         alert('Registrasi sukses! Silakan periksa kotak masuk email Anda untuk verifikasi akun sebelum masuk.');
         navigate('/login');
       } else {
         // Jika auto-login aktif langsung setelah daftar
-        localStorage.setItem('mindcare_token', result.token);
+        setStoredAuth({ token: result.token, user: result.user });
         navigate('/dashboard');
       }
     } catch (err) {

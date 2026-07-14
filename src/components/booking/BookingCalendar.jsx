@@ -1,40 +1,81 @@
-import { ChevronLeft, ChevronRight, User, Video, Wallet, CalendarCheck2, HelpCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, User, Video, Wallet, CalendarCheck2 } from 'lucide-react';
 
 const DAY_LABELS = ['MIN', 'SEN', 'SEL', 'RAB', 'KAM', 'JUM', 'SAB'];
 
-export function CalendarCard({ slots, selectedSlot, onSelectSlot }) {
+export function CalendarCard({
+  dates,
+  monthLabel,
+  selectedDate,
+  onSelectDate,
+  onPreviousMonth,
+  onNextMonth,
+  canGoPrevious = true,
+  canGoNext = true,
+  slots,
+  selectedSlot,
+  onSelectSlot,
+  todayDateId,
+}) {
+  const leadingEmptyCells = dates?.[0]?.weekdayIndex ?? 0;
+
   return (
     <div className="bg-white border border-auth-card rounded-xl overflow-hidden shadow-sm">
       <div className="flex items-center justify-between px-4 py-4 border-b border-auth-card">
         <p className="text-sm font-semibold text-dash-text">Pilih Tanggal & Waktu</p>
         <div className="flex items-center gap-4">
-          <button type="button" className="p-1 rounded"><ChevronLeft size={12} className="text-dash-muted" /></button>
-          <span className="text-[13.5px] font-bold text-dash-text">Oktober 2023</span>
-          <button type="button" className="p-1 rounded"><ChevronRight size={12} className="text-dash-muted" /></button>
+          <button
+            type="button"
+            onClick={onPreviousMonth}
+            disabled={!canGoPrevious}
+            className="p-1 rounded disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <ChevronLeft size={12} className="text-dash-muted" />
+          </button>
+          <span className="text-[13.5px] font-bold text-dash-text">{monthLabel || 'Oktober 2026'}</span>
+          <button
+            type="button"
+            onClick={onNextMonth}
+            disabled={!canGoNext}
+            className="p-1 rounded disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <ChevronRight size={12} className="text-dash-muted" />
+          </button>
         </div>
       </div>
       <div className="grid grid-cols-7 gap-1 px-4 py-4 border-b border-auth-card">
         {DAY_LABELS.map((d) => (
           <div key={d} className="text-center text-[11px] font-medium text-dash-linkMuted py-2">{d}</div>
         ))}
-        {[26, 27, 28, 29, 30].map((d) => (
-          <div key={`prev-${d}`} className="text-center text-[16px] text-dash-linkMuted opacity-30 py-3">{d}</div>
+        {Array.from({ length: leadingEmptyCells }, (_, index) => (
+          <div key={`empty-${index}`} className="py-3" />
         ))}
-        {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((d) => (
-          <div
-            key={d}
-            className={`text-center text-[16px] py-3 rounded-lg relative ${
-              d === 4 ? 'bg-dash-primary text-white font-bold' : 'text-dash-text'
-            }`}
-          >
-            {d}
-            {d === 4 && <span className="absolute left-1/2 -translate-x-1/2 bottom-1 size-1 rounded-full bg-white" />}
-          </div>
-        ))}
+        {dates.map((date) => {
+          const isSelected = selectedDate?.id === date.id;
+          const isPastDate = todayDateId ? date.id < todayDateId : false;
+
+          return (
+            <button
+              key={date.id}
+              type="button"
+              disabled={isPastDate}
+              onClick={() => onSelectDate(date.id)}
+              className={`text-center text-[16px] py-3 rounded-lg relative transition-colors ${
+                isPastDate
+                  ? 'text-dash-muted opacity-40 cursor-not-allowed line-through'
+                  : isSelected
+                  ? 'bg-dash-primary text-white font-bold'
+                  : 'text-dash-text hover:bg-[#f3f6fb]'
+              }`}
+            >
+              {date.day}
+              {isSelected && <span className="absolute left-1/2 -translate-x-1/2 bottom-1 size-1 rounded-full bg-white" />}
+            </button>
+          );
+        })}
       </div>
       <div className="p-6 flex flex-col gap-4">
         <p className="text-xs text-dash-muted">
-          Slot Tersedia untuk <span className="font-bold text-dash-text">Rabu, 4 Oktober</span>
+          Slot Tersedia untuk <span className="font-bold text-dash-text">{selectedDate?.label || 'Rabu, 4 Oktober'}</span>
         </p>
         <div className="grid grid-cols-4 gap-3">
           {slots?.map((slot) => {
@@ -64,7 +105,7 @@ export function CalendarCard({ slots, selectedSlot, onSelectSlot }) {
   );
 }
 
-export function BookingSummaryCard({ summary, onConfirm }) {
+export function BookingSummaryCard({ summary, onConfirm, loading = false, error = null }) {
   if (!summary) return null;
   return (
     <div className="flex flex-col gap-6">
@@ -74,7 +115,21 @@ export function BookingSummaryCard({ summary, onConfirm }) {
         </div>
         <div className="p-6 flex flex-col gap-4">
           <div className="flex items-center gap-4">
-            <span className="size-12 rounded-full bg-[#eceef0]" />
+            <div className="size-12 rounded-full overflow-hidden bg-[#eceef0] border border-auth-card flex items-center justify-center shrink-0">
+              {summary.counselorAvatarUrl ? (
+                <img src={summary.counselorAvatarUrl} alt={summary.counselor} className="size-full object-cover" />
+              ) : (
+                <span className="text-sm font-semibold text-dash-primary">
+                  {summary.counselor
+                    ?.split(' ')
+                    .filter(Boolean)
+                    .slice(0, 2)
+                    .map((part) => part[0])
+                    .join('')
+                    .toUpperCase() || 'KC'}
+                </span>
+              )}
+            </div>
             <div>
               <p className="text-[11px] uppercase tracking-wide text-dash-linkMuted">Konselor</p>
               <p className="text-[13.5px] font-bold text-dash-text">{summary.counselor}</p>
@@ -115,23 +170,16 @@ export function BookingSummaryCard({ summary, onConfirm }) {
           <button
             type="button"
             onClick={onConfirm}
-            className="rounded-xl bg-dash-primary text-white py-3 text-sm font-semibold shadow flex items-center justify-center gap-2"
+            disabled={loading}
+            className="rounded-xl bg-dash-primary text-white py-3 text-sm font-semibold shadow flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            Konfirmasi & Booking Sesi
+            {loading ? 'Memproses...' : 'Konfirmasi & Booking Sesi'}
           </button>
+          {error && <p className="text-xs text-dash-danger text-center">{error}</p>}
           <p className="text-[11px] text-center text-dash-linkMuted">
             Dengan mengonfirmasi, Anda menyetujui <span className="text-dash-primary underline">Kebijakan Privasi</span> kami.
           </p>
         </div>
-      </div>
-      <div className="bg-[#d8e2ff] border border-auth-card rounded-xl p-4 flex flex-col gap-2">
-        <p className="flex items-center gap-2 text-sm font-semibold text-[#0051b1]">
-          <HelpCircle size={18} /> Butuh Bantuan?
-        </p>
-        <p className="text-xs text-[#004395]">
-          Hubungi tim dukungan kami jika Anda kesulitan menentukan jadwal atau konselor yang tepat.
-        </p>
-        <span className="text-[13px] font-bold text-[#0051b1]">Chat Support →</span>
       </div>
     </div>
   );

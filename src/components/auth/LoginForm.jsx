@@ -21,8 +21,7 @@ export default function LoginForm() {
     setLoading(true);
     setError(null);
     try {
-      const { token } = await login(form);
-      localStorage.setItem('mindcare_token', token);
+      await login(form);
       navigate('/dashboard');
     } catch (err) {
       setError('Email atau kata sandi salah. Silakan coba lagi.');
