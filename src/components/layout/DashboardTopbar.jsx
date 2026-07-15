@@ -1,9 +1,22 @@
-import { Search, Bell } from 'lucide-react';
+import { Search, Bell, CornerDownLeft } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import useFetch from '../../hooks/useFetch.js';
 import { getCurrentUser } from '../../services/dashboardService.js';
 import { supabase } from '../../lib/supabaseClient';
+
+const NAV_SUGGESTIONS = [
+  { keys: ['dashboard', 'utama', 'home', 'beranda'], label: 'Dashboard', path: '/dashboard' },
+  { keys: ['mood tracker', 'pelacak suasana hati', 'catat mood', 'catatan harian', 'pembukuan emosi'], label: 'Pelacak Suasana Hati', path: '/mood-tracker' },
+  { keys: ['mood history', 'riwayat suasana', 'riwayat mood', 'timeline', 'riwayat catatan harian', 'timeline catatan harian', 'history'], label: 'Riwayat Suasana', path: '/mood-history' },
+  { keys: ['self assessment', 'penilaian diri', 'tes mental', 'kuisioner', 'uji kesehatan', 'tes'], label: 'Penilaian Diri', path: '/self-assessment' },
+  { keys: ['resources', 'sumber daya', 'artikel', 'video', 'meditasi', 'audio', 'galeri'], label: 'Sumber Daya & Artikel', path: '/resources' },
+  { keys: ['chat', 'konselor', 'chat konselor', 'counselor', 'obrolan'], label: 'Chat Konselor', path: '/counselor-chat' },
+  { keys: ['booking', 'booking sesi', 'jadwal konseling', 'schedule', 'reservasi', 'reservasi sesi'], label: 'Booking Sesi Konseling', path: '/schedule-session' },
+  { keys: ['community', 'komunitas anonim', 'forum', 'postingan', 'anonim', 'komunitas'], label: 'Komunitas Anonim', path: '/community' },
+  { keys: ['settings', 'pengaturan', 'profil', 'setting', 'ubah nama', 'akun'], label: 'Profil & Pengaturan', path: '/settings' },
+  { keys: ['emergency', 'bantuan darurat', 'hotline', 'darurat', 'tolong'], label: 'Bantuan Darurat', path: '/emergency-help' },
+];
 
 function getInitials(name) {
   if (!name) return 'MC';
@@ -16,6 +29,94 @@ export default function DashboardTopbar() {
   
   const [activeSession, setActiveSession] = useState(null);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  // Helper to get the best navigation match based on word scoring
+  const getBestMatch = (query) => {
+    if (!query.trim()) return null;
+    const q = query.toLowerCase().trim();
+    const queryWords = q.split(/\s+/).filter(w => w.length > 2);
+
+    let bestItem = null;
+    let maxScore = 0;
+
+    NAV_SUGGESTIONS.forEach(item => {
+      let score = 0;
+      
+      // Exact label matching
+      if (item.label.toLowerCase() === q) {
+        score += 50;
+      }
+
+      item.keys.forEach(k => {
+        const key = k.toLowerCase();
+        // 1. Direct contains check
+        if (q.includes(key)) {
+          score += key.length * 3;
+        }
+        // 2. Individual query word checks (allows fuzzy matching for typos)
+        queryWords.forEach(word => {
+          if (key.includes(word)) {
+            score += word.length;
+          }
+        });
+      });
+
+      if (score > maxScore) {
+        maxScore = score;
+        bestItem = item;
+      }
+    });
+
+    return maxScore >= 3 ? bestItem : null;
+  };
+
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSuggestions([]);
+      return;
+    }
+    const q = searchQuery.toLowerCase().trim();
+    const queryWords = q.split(/\s+/).filter(w => w.length > 2);
+
+    const scored = NAV_SUGGESTIONS.map(item => {
+      let score = 0;
+      if (item.label.toLowerCase().includes(q)) {
+        score += 10;
+      }
+      
+      item.keys.forEach(k => {
+        const key = k.toLowerCase();
+        if (q.includes(key)) score += key.length * 2;
+        if (key.includes(q)) score += q.length * 2;
+        
+        queryWords.forEach(word => {
+          if (key.includes(word)) score += word.length;
+        });
+      });
+      return { ...item, score };
+    })
+    .filter(item => item.score > 2)
+    .sort((a, b) => b.score - a.score);
+
+    setSuggestions(scored);
+  }, [searchQuery]);
+
+  const handleSearchKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      const bestMatch = getBestMatch(searchQuery);
+      if (bestMatch) {
+        navigate(bestMatch.path);
+        setSearchQuery('');
+        setShowSuggestions(false);
+      } else {
+        navigate(`/resources?search=${encodeURIComponent(searchQuery.trim())}`);
+        setShowSuggestions(false);
+      }
+    }
+  };
 
   useEffect(() => {
     const checkActiveBooking = async () => {
@@ -64,13 +165,9 @@ export default function DashboardTopbar() {
       return;
     }
 
-    // ============================================================
-    // HITUNG BATAS JAM AKHIR ABSOLUT BERDASARKAN WAKTU BOOKING
-    // ============================================================
     const sessionStart = new Date(activeSession.scheduled_at);
-    const sessionEndTimestamp = sessionStart.getTime() + (60 * 60 * 1000); // Selesai 1 jam setelah mulai
+    const sessionEndTimestamp = sessionStart.getTime() + (60 * 60 * 1000); 
 
-    // Simpan data ke localStorage agar bisa dibaca halaman chat
     localStorage.setItem('active_counselor_redirect', targetCounselorId);
     localStorage.setItem(`session_expiry_${targetCounselorId}`, sessionEndTimestamp.toString());
 
@@ -100,15 +197,48 @@ export default function DashboardTopbar() {
 
   return (
     <header className="fixed top-0 left-[220px] right-0 h-14 bg-dash-sidebar border-b border-dash-border flex items-center justify-between px-6 z-30">
-      <div className="flex-1 max-w-[256px]">
+      <div className="flex-1 max-w-[256px] relative">
         <div className="relative">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-dash-muted" />
           <input
             type="text"
-            placeholder="Cari sumber daya..."
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setShowSuggestions(true);
+            }}
+            onFocus={() => setShowSuggestions(true)}
+            onBlur={() => {
+              setTimeout(() => setShowSuggestions(false), 200);
+            }}
+            onKeyDown={handleSearchKeyDown}
+            placeholder="Cari fitur atau artikel..."
             className="w-full bg-white rounded-full pl-10 pr-4 py-1.5 text-[13px] text-dash-muted placeholder:text-dash-muted border border-transparent focus:outline-none focus:border-dash-primary/30"
           />
         </div>
+
+        {showSuggestions && suggestions.length > 0 && (
+          <div className="absolute left-0 right-0 mt-1.5 bg-white border border-dash-border rounded-xl shadow-xl overflow-hidden z-50 flex flex-col max-h-60 overflow-y-auto">
+            {suggestions.map((item) => (
+              <button
+                key={item.path}
+                type="button"
+                onClick={() => {
+                  navigate(item.path);
+                  setSearchQuery('');
+                  setShowSuggestions(false);
+                }}
+                className="w-full text-left px-4 py-2.5 hover:bg-surface-tint border-b border-dash-border/30 last:border-0 transition-colors flex justify-between items-center group"
+              >
+                <div className="flex flex-col">
+                  <span className="text-[13px] font-bold text-dash-text group-hover:text-dash-primary transition-colors">{item.label}</span>
+                  <span className="text-[10px] text-dash-muted mt-0.5">Navigasi ke {item.path}</span>
+                </div>
+                <CornerDownLeft size={12} className="text-dash-muted opacity-0 group-hover:opacity-100 transition-opacity" />
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="flex items-center gap-4">
