@@ -1,108 +1,225 @@
+import { supabase } from '../lib/supabaseClient';
+import { getCurrentDatabaseUser } from './authService.js';
+
 const mockDelay = (data, ms = 300) =>
   new Promise((resolve) => setTimeout(() => resolve({ data }), ms));
 
-// Mood per tanggal (1-21) untuk kalender bulan ini — dummy.
-const DUMMY_CALENDAR_DATA = {
-  2: 'senang',
-  3: 'senang',
-  4: 'cemas',
-  5: 'senang',
-  6: 'netral',
-  7: 'netral',
-  8: 'sedih',
-  9: 'cemas',
-  10: 'senang',
-  11: 'senang',
-  12: 'netral',
-  13: 'today',
+// Helper: Pemetaan nilai mood
+const DB_MOOD_TO_SCORE = {
+  'sangat_sedih': 1,
+  'sedih': 2,
+  'netral': 3,
+  'senang': 4,
+  'sangat_senang': 5
 };
 
-const DUMMY_TREND = [
-  { date: '1 Okt', intensity: 5 },
-  { date: '5 Okt', intensity: 7 },
-  { date: '8 Okt', intensity: 4 },
-  { date: '12 Okt', intensity: 8 },
-  { date: '15 Okt', intensity: 6 },
-  { date: '19 Okt', intensity: 5 },
-  { date: '22 Okt', intensity: 9 },
-  { date: '26 Okt', intensity: 7 },
-  { date: '31 Okt', intensity: 8 },
-];
-
-const DUMMY_MOST_FREQUENT = {
-  mood: 'Sangat Senang',
-  count: 12,
-  percentage: 38,
+const DB_MOOD_TO_LABEL = {
+  'sangat_sedih': 'Sangat Sedih',
+  'sedih': 'Sedih',
+  'netral': 'Netral',
+  'senang': 'Senang',
+  'sangat_senang': 'Sangat Senang'
 };
 
-const DUMMY_IMPROVEMENT = {
-  percentage: 14.2,
-  label: 'Stabilitas Emosional',
-  direction: 'up',
+const DB_MOOD_TO_CALENDAR_KEY = {
+  'sangat_sedih': 'sedih',
+  'sedih': 'sedih',
+  'netral': 'netral',
+  'senang': 'senang',
+  'sangat_senang': 'senang'
 };
 
-const DUMMY_WEEKLY_ANALYSIS = {
-  text: 'Mood Anda cenderung meningkat di akhir pekan (Jumat-Sabtu). Penurunan mood biasanya terjadi di Selasa malam, kemungkinan terkait dengan beban tugas kuliah.',
+const DB_MOOD_TO_TAGS = {
+  'sangat_sedih': ['#Down', '#ButuhIstirahat'],
+  'sedih': ['#Sedih', '#Lelah'],
+  'netral': ['#BiasaAja', '#Rutinitas'],
+  'senang': ['#Happy', '#Produktif'],
+  'sangat_senang': ['#SangatHappy', '#LuarBiasa']
 };
-
-const DUMMY_TIMELINE = [
-  {
-    id: 'tl-1',
-    date: '13 Okt',
-    time: '19:30',
-    mood: 'netral',
-    title: 'Netral - "Hari yang Produktif"',
-    note: 'Sangat lega karena akhirnya menyelesaikan tugas besar Pemrograman. Sempat merasa pusing di siang hari, tapi tidur siang sebentar sangat membantu.',
-    tags: ['#TugasKuliah', '#Lega'],
-  },
-  {
-    id: 'tl-2',
-    date: '12 Okt',
-    time: '22:15',
-    mood: 'cemas',
-    title: 'Cemas - "Kepikiran Deadline"',
-    note: 'Gak bisa fokus belajar karena kepikiran tugas besok. Terlalu banyak minum kopi jadi susah tidur.',
-    tags: ['#Kecemasan', '#Begadang'],
-  },
-  {
-    id: 'tl-3',
-    date: '11 Okt',
-    time: '23:00',
-    mood: 'senang',
-    title: 'Sangat Senang - "Nongkrong sama Teman"',
-    note: 'Menghabiskan waktu di kafe bareng Andi dan Siti. Lupa sebentar sama stres kuliah. Benar-benar recharge energi sosial!',
-    tags: ['#Pertemanan', '#SocialRecharge'],
-  },
-];
 
 export async function getCalendarData() {
-  const res = await mockDelay(DUMMY_CALENDAR_DATA);
-  return res.data;
+  const user = await getCurrentDatabaseUser();
+  if (!user) return {};
+
+  const date = new Date();
+  const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
+  const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59);
+
+  const { data } = await supabase
+    .from('mood_entries')
+    .select('mood, created_at')
+    .eq('user_id', user.id)
+    .gte('created_at', firstDay.toISOString())
+    .lte('created_at', lastDay.toISOString())
+    .order('created_at', { ascending: true });
+
+  const result = {};
+  if (data) {
+    data.forEach(entry => {
+      const d = new Date(entry.created_at).getDate();
+      // Menyimpan mood terakhir pada hari itu
+      result[d] = DB_MOOD_TO_CALENDAR_KEY[entry.mood] || 'netral';
+    });
+  }
+  
+  return result;
 }
 
 export async function getMoodTrend() {
-  // const res = await api.get('/mood/trend?range=month');
-  const res = await mockDelay(DUMMY_TREND);
-  return res.data;
+  const user = await getCurrentDatabaseUser();
+  if (!user) return [];
+
+  // Ambil data 30 hari terakhir
+  const today = new Date();
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(today.getDate() - 30);
+
+  const { data } = await supabase
+    .from('mood_entries')
+    .select('mood, created_at')
+    .eq('user_id', user.id)
+    .gte('created_at', thirtyDaysAgo.toISOString())
+    .order('created_at', { ascending: true });
+
+  if (!data || data.length === 0) {
+    return [];
+  }
+
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+  
+  return data.map(entry => {
+    const d = new Date(entry.created_at);
+    // Asumsi chart intensity maksimal 10, sehingga score (1-5) dikali 2
+    return {
+      date: `${d.getDate()} ${months[d.getMonth()]}`,
+      intensity: (DB_MOOD_TO_SCORE[entry.mood] || 3) * 2 
+    };
+  });
 }
 
 export async function getMostFrequentMood() {
-  const res = await mockDelay(DUMMY_MOST_FREQUENT);
-  return res.data;
+  const user = await getCurrentDatabaseUser();
+  if (!user) return { mood: 'Belum ada data', count: 0, percentage: 0 };
+
+  const date = new Date();
+  const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
+
+  const { data } = await supabase
+    .from('mood_entries')
+    .select('mood')
+    .eq('user_id', user.id)
+    .gte('created_at', firstDay.toISOString());
+
+  if (!data || data.length === 0) {
+    return { mood: 'Belum ada data', count: 0, percentage: 0 };
+  }
+
+  const counts = {};
+  let maxMood = '';
+  let maxCount = 0;
+
+  data.forEach(entry => {
+    counts[entry.mood] = (counts[entry.mood] || 0) + 1;
+    if (counts[entry.mood] > maxCount) {
+      maxCount = counts[entry.mood];
+      maxMood = entry.mood;
+    }
+  });
+
+  const percentage = Math.round((maxCount / data.length) * 100);
+
+  return {
+    mood: DB_MOOD_TO_LABEL[maxMood] || 'Netral',
+    count: maxCount,
+    percentage: percentage
+  };
+}
+
+// Fungsi pembantu untuk menghitung rata-rata skor mood dalam rentang tanggal
+async function getAverageMood(userId, startDate, endDate) {
+  const { data } = await supabase
+    .from('mood_entries')
+    .select('mood')
+    .eq('user_id', userId)
+    .gte('created_at', startDate.toISOString())
+    .lte('created_at', endDate.toISOString());
+
+  if (!data || data.length === 0) return null;
+
+  const totalScore = data.reduce((sum, entry) => sum + (DB_MOOD_TO_SCORE[entry.mood] || 3), 0);
+  return totalScore / data.length;
 }
 
 export async function getImprovementStats() {
-  const res = await mockDelay(DUMMY_IMPROVEMENT);
-  return res.data;
+  const user = await getCurrentDatabaseUser();
+  if (!user) return { percentage: 0, label: 'Belum cukup data', direction: 'up' };
+
+  const today = new Date();
+  const lastWeek = new Date();
+  lastWeek.setDate(today.getDate() - 7);
+  const twoWeeksAgo = new Date();
+  twoWeeksAgo.setDate(lastWeek.getDate() - 7);
+
+  const currentAvg = await getAverageMood(user.id, lastWeek, today);
+  const previousAvg = await getAverageMood(user.id, twoWeeksAgo, lastWeek);
+
+  if (currentAvg === null || previousAvg === null) {
+    return { percentage: 0, label: 'Kumpulkan data minggu ini', direction: 'up' };
+  }
+
+  const diff = currentAvg - previousAvg;
+  // Ubah beda rata-rata (skala 5) menjadi persentase peningkatan/penurunan relatif terhadap skor sebelumnya
+  const percentage = Math.round(Math.abs(diff / previousAvg) * 100);
+  
+  return {
+    percentage: percentage > 100 ? 100 : percentage, // Cap di 100%
+    label: diff >= 0 ? 'Mood Anda meningkat' : 'Mood Anda menurun',
+    direction: diff >= 0 ? 'up' : 'down'
+  };
 }
 
 export async function getWeeklyTrendAnalysis() {
-  const res = await mockDelay(DUMMY_WEEKLY_ANALYSIS);
-  return res.data;
+  const user = await getCurrentDatabaseUser();
+  if (!user) return { text: 'Belum ada data cukup untuk dianalisis.' };
+
+  const stats = await getImprovementStats();
+  
+  if (stats.percentage === 0) {
+    return { text: 'Mari rutin mencatat mood Anda agar kami bisa menganalisis pola mingguan emosi Anda secara lebih baik.' };
+  }
+
+  if (stats.direction === 'up') {
+    return { text: `Hebat! Ada peningkatan sebesar ${stats.percentage}% dibandingkan minggu lalu. Tetap pertahankan rutinitas positif Anda saat ini.` };
+  } else {
+    return { text: `Minggu ini terlihat sedikit menantang dengan penurunan ${stats.percentage}%. Jangan ragu untuk membaca rekomendasi artikel atau menjadwalkan konseling jika butuh bantuan.` };
+  }
 }
 
 export async function getTimelineEntries() {
-  // const res = await api.get('/mood/entries?view=timeline');
-  const res = await mockDelay(DUMMY_TIMELINE);
-  return res.data;
+  const user = await getCurrentDatabaseUser();
+  if (!user) return [];
+
+  const { data } = await supabase
+    .from('mood_entries')
+    .select('*')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false })
+    .limit(10);
+
+  if (!data || data.length === 0) return [];
+
+  return data.map(entry => {
+    const d = new Date(entry.created_at);
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+    
+    return {
+      id: entry.id,
+      date: `${d.getDate()} ${months[d.getMonth()]}`,
+      time: `${d.getHours()}:${d.getMinutes().toString().padStart(2, '0')}`,
+      mood: DB_MOOD_TO_CALENDAR_KEY[entry.mood] || 'netral',
+      title: `${DB_MOOD_TO_LABEL[entry.mood]}`,
+      note: entry.note || 'Tidak ada catatan.',
+      tags: DB_MOOD_TO_TAGS[entry.mood] || ['#Jurnal']
+    };
+  });
 }

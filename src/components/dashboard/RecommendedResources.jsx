@@ -5,19 +5,27 @@ import { getRecommendedResources } from '../../services/dashboardService.js';
 
 function ResourceCard({ resource }) {
   return (
-    <Link to={`/resources/${resource.id}`} className="flex-1 min-w-[260px] group">
+    <Link to={`/resources/artikel/${resource.id}`} className="flex-1 min-w-[260px] group">
       <div className="relative h-40 rounded-xl2 overflow-hidden bg-dash-primary/10 flex items-center justify-center text-dash-primary/30 text-sm">
-        Ilustrasi
+        {resource.cover_image_url ? (
+          <img 
+            src={resource.cover_image_url} 
+            alt={resource.title} 
+            className="absolute inset-0 w-full h-full object-cover group-hover:opacity-90 transition-opacity" 
+          />
+        ) : (
+          "Ilustrasi"
+        )}
         <span
-          className={`absolute top-2 right-2 backdrop-blur-md bg-white/80 rounded px-2 py-1 text-[10px] font-bold uppercase ${resource.typeColor}`}
+          className={`absolute top-3 left-3 backdrop-blur-md bg-white/90 rounded px-2.5 py-1 text-[10px] font-bold uppercase ${resource.typeColor} shadow-sm`}
         >
           {resource.type}
         </span>
       </div>
-      <h4 className="text-sm font-semibold text-dash-text pt-3 group-hover:text-dash-primary transition-colors">
+      <h4 className="text-[15px] leading-snug font-semibold text-dash-text pt-3 group-hover:text-dash-primary transition-colors">
         {resource.title}
       </h4>
-      <p className="text-[11px] text-dash-muted pt-1">{resource.subtitle}</p>
+      <p className="text-[11px] font-medium text-dash-muted pt-1.5">{resource.subtitle}</p>
     </Link>
   );
 }

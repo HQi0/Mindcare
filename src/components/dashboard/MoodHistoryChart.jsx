@@ -19,7 +19,7 @@ export default function MoodHistoryChart() {
     <div className="md:col-span-8 bg-white border border-dash-border rounded-xl2 p-6 flex flex-col gap-6 h-[350px]">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-dash-text">
-          Riwayat Suasana Hati (7 Hari Terakhir)
+          Riwayat Suasana Hati
         </h3>
         <div className="flex items-center gap-1.5">
           <span className="size-2 rounded-full bg-dash-primary" />

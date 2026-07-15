@@ -1,151 +1,99 @@
-const mockDelay = (data, ms = 300) =>
-  new Promise((resolve) => setTimeout(() => resolve({ data }), ms));
-
-const DUMMY_CATEGORIES = [
-  { id: 'semua', label: 'Semua' },
-  { id: 'artikel', label: 'Artikel' },
-  { id: 'video', label: 'Video' },
-  { id: 'meditasi', label: 'Meditasi' },
-  { id: 'audio', label: 'Audio' },
-];
-
-const DUMMY_HERO = {
-  badge: 'TOPIK UTAMA MINGGU INI',
-  title: 'Menavigasi Tekanan Akademik di Akhir Semester',
-  description:
-    'Kumpulan strategi teruji untuk menjaga kesehatan mental saat menghadapi tumpukan tugas dan ujian akhir.',
-  cta: 'Mulai Belajar',
-};
-
-const DUMMY_STRESS_SECTION = {
-  title: 'Manajemen Stres',
-  description: 'Teknik praktis untuk meredakan kecemasan sehari-hari.',
-  featured: {
-    id: 'grounding-kuliah',
-    type: 'ARTIKEL',
-    duration: '8 MENIT',
-    title: '5 Menit Mindfulness: Teknik Grounding di Tengah Kuliah',
-    description:
-      'Pelajari cara menenangkan sistem saraf Anda secara instan bahkan di ruang kelas yang ramai dengan metode 5-4-3-2-1.',
-    author: 'Dr. Amira Sari',
-  },
-  secondary: [
-    {
-      id: 'box-breathing',
-      type: 'AUDIO',
-      duration: '12 Menit',
-      title: 'Panduan Pernapasan Box untuk Fokus',
-      actionLabel: 'Putar Sekarang',
-    },
-    {
-      id: 'burnout-skripsi',
-      type: 'VIDEO',
-      duration: '15 Menit',
-      title: 'Mengelola Burnout Saat Mengerjakan Skripsi',
-      actionLabel: 'Tonton Sekarang',
-    },
-  ],
-};
-
-const DUMMY_SLEEP_SECTION = {
-  title: 'Optimasi Tidur',
-  description: 'Perbaiki kualitas istirahat Anda untuk performa kognitif yang lebih baik.',
-  cards: [
-    { id: 'visualisasi-pantai', category: 'Meditasi', title: 'Visualisasi: Pantai di Malam Hari', duration: '20 Menit' },
-    { id: 'sains-tidur', category: 'Artikel', title: 'Sains di Balik Tidur 8 Jam', duration: '6 Menit' },
-    { id: 'wind-down', category: 'Audio', title: 'Ritual Sebelum Tidur (Wind Down)', duration: '15 Menit' },
-  ],
-};
-
-const DUMMY_ACADEMIC_SECTION = {
-  title: 'Tekanan Akademik',
-  description: 'Menyeimbangkan prestasi tanpa mengorbankan diri sendiri.',
-  cards: [
-    {
-      id: 'kecemasan-akademik',
-      title: 'Teknik Pomodoro untuk Mahasiswa ADHD',
-      description: 'Bagaimana memodifikasi teknik manajemen waktu populer untuk otak yang bekerja secara berbeda.',
-      meta: 'Video Series • 3 Bagian',
-      badge: 'SELESAI 40%',
-    },
-    {
-      id: 'seni-menghadapi-kegagalan',
-      title: 'Seni Menghadapi Kegagalan Akademik',
-      description: 'Membangun ketangguhan (resilience) setelah mendapatkan nilai yang tidak sesuai ekspektasi.',
-      meta: 'Artikel Panjang',
-      badge: 'BARU',
-    },
-  ],
-};
-
-const DUMMY_ARTICLE_DETAIL = {
-  id: 'kecemasan-ujian',
-  badges: ['KESEHATAN MENTAL', 'TIPS MAHASISWA'],
-  title: 'Strategi Menghadapi Kecemasan Akademik Selama Masa Ujian',
-  author: { name: 'Dr. Sarah Kencana, M.Psi', role: 'PSIKOLOG KLINIS', bio: 'Spesialis Kecemasan & Produktivitas Mahasiswa di MindCare.' },
-  readTime: '8 menit baca',
-  date: '24 Okt 2023',
-  toc: [
-    'Memahami Akar Kecemasan',
-    'Tips Praktis Mengelola Stres',
-    'Pentingnya Self-Compassion',
-    'Kesimpulan',
-  ],
-  intro:
-    'Masa ujian seringkali menjadi periode yang paling menantang bagi mahasiswa. Tekanan untuk berprestasi, ditambah dengan kurangnya waktu istirahat, dapat memicu kecemasan akademik yang signifikan. Kecemasan ini bukan hanya sekadar rasa gugup biasa, namun bisa berdampak pada kemampuan kognitif dan kesehatan fisik secara keseluruhan.',
-  sections: [
-    {
-      heading: 'Memahami Akar Kecemasan Akademik',
-      body: 'Kecemasan akademik sering kali berakar dari ketakutan akan kegagalan atau standar perfeksionisme yang terlalu tinggi. Di lingkungan universitas yang kompetitif, mahasiswa cenderung membandingkan diri dengan rekan-rekan mereka, yang kemudian memperburuk perasaan tidak mampu.',
-    },
-  ],
-  quote:
-    'Kecemasan adalah sinyal dari pikiran kita, bukan hukuman. Mengenali kehadirannya adalah langkah pertama untuk mengelolanya dengan bijak.',
-  tips: [
-    { title: 'Teknik Pernapasan 4-7-8:', body: 'Tarik napas selama 4 detik, tahan selama 7 detik, dan buang napas perlahan selama 8 detik. Lakukan ini saat Anda mulai merasa kewalahan.' },
-    { title: 'Jadwal Belajar Terstruktur:', body: 'Hindari sistem kebut semalam. Bagi materi menjadi bagian-bagian kecil yang bisa dikelola setiap harinya.' },
-    { title: 'Batasi Kafein Berlebih:', body: 'Meskipun membantu tetap terjaga, kafein berlebih dapat meningkatkan gejala fisik kecemasan seperti jantung berdebar.' },
-    { title: 'Tidur yang Cukup:', body: 'Otak memerlukan fase REM untuk mengonsolidasi memori. Belajar tanpa tidur justru menurunkan efektivitas ingatan.' },
-  ],
-  compassion:
-    'Bersikap baik pada diri sendiri adalah kunci. Sadarilah bahwa hasil ujian tidak menentukan nilai diri Anda sebagai manusia seutuhnya. Berikan ruang bagi diri Anda untuk beristirahat tanpa rasa bersalah.',
-  conclusion:
-    'Kesehatan mental Anda jauh lebih berharga daripada angka di atas kertas. Dengan menerapkan strategi yang tepat, Anda tidak hanya dapat melewati ujian dengan lebih baik, tetapi juga membangun ketahanan mental yang akan berguna di masa depan.',
-  helpfulCount: 124,
-  related: [
-    { id: 'meditasi-pemula', category: 'MINDFULNESS', title: 'Cara Memulai Meditasi untuk Pemula di Kampus', meta: '5 MENIT BACA' },
-    { id: 'sistem-pendukung', category: 'KOMUNITAS', title: 'Membangun Sistem Pendukung Antar Teman', meta: '7 MENIT BACA' },
-    { id: 'nutrisi-otak', category: 'EDUKASI', title: 'Nutrisi Otak: Makanan yang Meningkatkan Fokus', meta: '10 MENIT BACA' },
-  ],
-};
+import { supabase } from '../lib/supabaseClient';
 
 export async function getCategories() {
-  const res = await mockDelay(DUMMY_CATEGORIES);
-  return res.data;
+  const { data, error } = await supabase
+    .from('articles')
+    .select('category');
+
+  if (error || !data) return [{ id: 'semua', label: 'Semua' }];
+
+  // Extract unique categories
+  const uniqueCategories = [...new Set(data.map(item => item.category?.toUpperCase() || 'UMUM'))];
+  
+  const categories = [
+    { id: 'semua', label: 'Semua' },
+    ...uniqueCategories.map(cat => ({ id: cat.toLowerCase(), label: cat }))
+  ];
+
+  return categories;
 }
 
 export async function getHero() {
-  const res = await mockDelay(DUMMY_HERO);
-  return res.data;
+  const { data, error } = await supabase
+    .from('articles')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single();
+
+  if (error || !data) {
+    return {
+      badge: 'TOPIK UTAMA',
+      title: 'Selamat Datang di Pustaka MindCare',
+      description: 'Jelajahi berbagai artikel dan sumber daya untuk membantu menjaga kesehatan mental Anda.',
+      cta: 'Mulai Membaca',
+    };
+  }
+
+  return {
+    id: data.id,
+    badge: 'ARTIKEL TERBARU',
+    title: data.title,
+    description: data.content.substring(0, 120) + '...',
+    cta: 'Baca Sekarang',
+    cover_image_url: data.cover_image_url
+  };
 }
 
-export async function getStressSection() {
-  const res = await mockDelay(DUMMY_STRESS_SECTION);
-  return res.data;
+export async function getArticles(activeCategory) {
+  let query = supabase
+    .from('articles')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (activeCategory && activeCategory !== 'semua') {
+    // In database they are stored in uppercase (EDUKASI) or title case, so we do ilike or we can just fetch all and filter in JS if it's small, 
+    // but better to use ilike for case insensitivity.
+    query = query.ilike('category', activeCategory);
+  }
+
+  const { data, error } = await query;
+  
+  if (error) return [];
+  
+  return data.map(article => ({
+    id: article.id,
+    type: (article.category || 'UMUM').toUpperCase(),
+    title: article.title,
+    description: article.content.substring(0, 100) + '...',
+    cover_image_url: article.cover_image_url,
+    created_at: new Date(article.created_at).toLocaleDateString('id-ID', {
+      year: 'numeric', month: 'long', day: 'numeric'
+    })
+  }));
 }
 
-export async function getSleepSection() {
-  const res = await mockDelay(DUMMY_SLEEP_SECTION);
-  return res.data;
-}
+export async function getArticleDetail(articleId) {
+  const { data, error } = await supabase
+    .from('articles')
+    .select('*')
+    .eq('id', articleId)
+    .single();
 
-export async function getAcademicSection() {
-  const res = await mockDelay(DUMMY_ACADEMIC_SECTION);
-  return res.data;
-}
+  if (error || !data) throw new Error("Artikel tidak ditemukan");
 
-export async function getArticleDetail(_articleId) {
-  // const res = await api.get(`/resources/articles/${articleId}`);
-  const res = await mockDelay(DUMMY_ARTICLE_DETAIL);
-  return res.data;
+  // Format to match the structure expected by the UI
+  return {
+    id: data.id,
+    badges: [data.category?.toUpperCase() || 'UMUM'],
+    title: data.title,
+    author: { name: 'MindCare Team', role: 'REDAKSI', bio: 'Tim penyusun konten kesehatan mental MindCare.' },
+    readTime: '5 menit baca',
+    date: new Date(data.created_at).toLocaleDateString('id-ID', {
+      year: 'numeric', month: 'long', day: 'numeric'
+    }),
+    content: data.content,
+    cover_image_url: data.cover_image_url,
+    related: [] 
+  };
 }

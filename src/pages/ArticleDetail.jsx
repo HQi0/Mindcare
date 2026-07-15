@@ -5,10 +5,14 @@ import { ArticleHero, ArticleContent, ArticleSidebar, RelatedArticles } from '..
 
 export default function ArticleDetail() {
   const { articleId } = useParams();
-  const { data: article, loading } = useFetch(getArticleDetail, [articleId]);
+  const { data: article, loading, error } = useFetch(() => getArticleDetail(articleId), [articleId]);
 
-  if (loading || !article) {
-    return <div className="text-dash-muted text-sm">Memuat artikel...</div>;
+  if (loading) {
+    return <div className="text-dash-muted text-sm text-center py-20">Memuat artikel...</div>;
+  }
+
+  if (error || !article) {
+    return <div className="text-red-500 text-sm text-center py-20">Gagal memuat artikel: {error?.message || 'Artikel tidak ditemukan'}</div>;
   }
 
   return (

@@ -10,13 +10,14 @@
     "lint": "eslint ."
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.110.5",
+    "axios": "^1.7.9",
+    "framer-motion": "^11.11.17",
+    "lucide-react": "^0.462.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router-dom": "^6.28.0",
-    "lucide-react": "^0.462.0",
-    "framer-motion": "^11.11.17",
-    "recharts": "^2.13.3",
-    "axios": "^1.7.9"
+    "recharts": "^2.13.3"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.4",
