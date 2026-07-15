@@ -3,7 +3,6 @@ const mockDelay = (data, ms = 300) =>
 
 const DUMMY_QUICK_CONTACTS = [
   { id: 'halo-kemkes', name: 'Halo Kemkes (Bunuh Diri)', note: 'Layanan 24 Jam', phone: '1500-567', color: 'red' },
-  { id: 'satgas-kampus', name: 'Satgas Kampus', note: 'Keamanan & Medis Kampus', phone: '(021) 123456', color: 'blue' },
   { id: 'layanan-konseling', name: 'Layanan Konseling', note: 'Emergency Chat (MindCare)', phone: 'Chat', color: 'purple' },
 ];
 
@@ -28,10 +27,10 @@ const DUMMY_AFFIRMATIONS = [
 ];
 
 const DUMMY_HOSPITAL = {
-  name: 'RS Universitas Indonesia',
-  address: 'Jl. Prof. Dr. Bahder Djohan, Depok',
-  phone: '(021) 50829292',
-  distance: '2.4 KM',
+  name: 'RSUP Persahabatan',
+  address: 'Jl. Persahabatan Raya No. 1, Rawamangun, Jakarta Timur',
+  phone: '(021) 4891708',
+  distance: '1.2 KM',
 };
 
 export async function getQuickContacts() {

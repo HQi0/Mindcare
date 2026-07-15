@@ -6,6 +6,15 @@ import { getConversations, getMessages, sendMessage } from '../services/chatServ
 import ConversationsList from '../components/chat/ConversationsList.jsx';
 import ChatWindow from '../components/chat/ChatWindow.jsx';
 
+const EMERGENCY_ROOM = {
+  id: 'counselor-emergency-siaga',
+  name: 'Konselor Siaga 24/7 (Darurat)',
+  role: 'UGD Mental Health',
+  online: true,
+  lastMessage: 'Halo, saya konselor siaga yang sedang bertugas. Ceritakan masalah Anda, kami siap mendengarkan...',
+  lastTime: '24/7'
+};
+
 export default function CounselorChat() {
   const location = useLocation();
   const [conversations, setConversations] = useState([]);
@@ -23,6 +32,10 @@ export default function CounselorChat() {
         if (!Array.isArray(historyConversations)) {
           historyConversations = [];
         }
+
+        // Exclude dummy if fetched, and insert at the top
+        historyConversations = historyConversations.filter(c => c && c.id !== 'counselor-emergency-siaga');
+        historyConversations = [EMERGENCY_ROOM, ...historyConversations];
 
         const targetCounselorId = localStorage.getItem('active_counselor_redirect');
 
@@ -72,21 +85,41 @@ export default function CounselorChat() {
   useEffect(() => {
     if (!activeId) return;
 
+    if (activeId === 'counselor-emergency-siaga') {
+      setIsSessionLocked(false);
+
+      const stored = localStorage.getItem('mindcare_chat_emergency');
+      if (stored) {
+        setMessages(JSON.parse(stored));
+      } else {
+        const initialMsg = [
+          {
+            id: 'welcome-emerg',
+            from: 'counselor',
+            time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+            text: 'Halo, saya konselor siaga yang sedang bertugas. Ceritakan apa yang sedang Anda rasakan atau hadapi saat ini. Ruang obrolan darurat ini selalu aktif 24 jam untuk mendukung Anda.',
+            created_at: new Date().toISOString(),
+            isSystemTriggered: false
+          }
+        ];
+        localStorage.setItem('mindcare_chat_emergency', JSON.stringify(initialMsg));
+        setMessages(initialMsg);
+      }
+      return;
+    }
+
     setIsSessionLocked(true);
 
     getMessages(activeId)
       .then((data) => {
         setMessages(Array.isArray(data) ? data : []);
 
-        // ============================================================
         // EVALUASI INSTAN BERDASARKAN JAM LAPTOP
-        // ============================================================
         const expiryTimeStr = localStorage.getItem(`session_expiry_${activeId}`);
         
         if (expiryTimeStr) {
           const expiryTimestamp = parseInt(expiryTimeStr, 10);
           
-          // Jika jam laptop sekarang sudah melewati batas jadwal seharusnya
           if (Date.now() > expiryTimestamp) {
             setIsSessionLocked(true);
             return;
@@ -96,7 +129,6 @@ export default function CounselorChat() {
           }
         }
 
-        // Jika tidak ada data booking aktif di localStorage (sesi lama), otomatis kunci
         setIsSessionLocked(true);
       })
       .catch((err) => {
@@ -144,7 +176,7 @@ export default function CounselorChat() {
 
   // Pengecekan latar belakang berkala (Tiap 1 detik) mencocokkan Jam Laptop
   useEffect(() => {
-    if (!activeId) return;
+    if (!activeId || activeId === 'counselor-emergency-siaga') return;
 
     const interval = setInterval(() => {
       const expiryTimeStr = localStorage.getItem(`session_expiry_${activeId}`);
@@ -152,7 +184,6 @@ export default function CounselorChat() {
       if (expiryTimeStr) {
         const expiryTimestamp = parseInt(expiryTimeStr, 10);
         
-        // Cek secara real-time detik demi detik dengan jam internal laptop
         if (Date.now() > expiryTimestamp) {
           setIsSessionLocked(true);
         } else {
@@ -161,7 +192,7 @@ export default function CounselorChat() {
       } else {
         setIsSessionLocked(true);
       }
-    }, 1000); // 1 detik agar super sensitif mengikuti pergeseran jarum jam laptop
+    }, 1000);
 
     return () => clearInterval(interval);
   }, [activeId]);
@@ -171,7 +202,7 @@ export default function CounselorChat() {
     : null;
 
   const handleSend = async (text) => {
-    if (!activeId || isSessionLocked) return;
+    if (!activeId) return;
 
     const optimistic = { 
       id: `tmp-${Date.now()}`, 
@@ -181,6 +212,53 @@ export default function CounselorChat() {
       created_at: new Date().toISOString(),
       isSystemTriggered: false
     };
+
+    if (activeId === 'counselor-emergency-siaga') {
+      const updatedMessages = [...messages, optimistic];
+      setMessages(updatedMessages);
+      localStorage.setItem('mindcare_chat_emergency', JSON.stringify(updatedMessages));
+      
+      setConversations(prev => 
+        prev.map(c => c && c.id === 'counselor-emergency-siaga' ? { ...c, lastMessage: text } : c)
+      );
+
+      // Simulate a therapist response after 1.5 seconds
+      setTimeout(() => {
+        const SIMULATED_RESPONSES = [
+          "Tarik napas perlahan terlebih dahulu. Saya ada di sini mendengarkanmu. Bisakah ceritakan apa yang sedang terjadi?",
+          "Terima kasih telah berani bercerita. Ingatlah bahwa Anda tidak sendirian di sini. Mari kita lalui ini bersama-sama.",
+          "Keadaan ini pasti sangat berat bagimu, namun kamu sangat kuat karena telah bertahan sejauh ini. Apakah ada orang terdekat yang bisa kamu hubungi saat ini?",
+          "Fokuslah pada pernapasanmu terlebih dahulu. Hirup udara dalam 4 detik, tahan 4 detik, lalu hembuskan perlahan. Saya akan terus menemanimu di sini.",
+        ];
+
+        const replyIndex = Math.floor(Math.random() * SIMULATED_RESPONSES.length);
+        const replyText = SIMULATED_RESPONSES[replyIndex];
+
+        const responseMsg = {
+          id: `emerg-reply-${Date.now()}`,
+          from: 'counselor',
+          time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+          text: replyText,
+          created_at: new Date().toISOString(),
+          isSystemTriggered: false
+        };
+
+        setMessages((prev) => {
+          const newMsgs = [...prev, responseMsg];
+          localStorage.setItem('mindcare_chat_emergency', JSON.stringify(newMsgs));
+          return newMsgs;
+        });
+
+        setConversations(prev =>
+          prev.map(c => c && c.id === 'counselor-emergency-siaga' ? { ...c, lastMessage: replyText } : c)
+        );
+      }, 1500);
+
+      return;
+    }
+
+    if (isSessionLocked) return;
+    
     setMessages((prev) => [...prev, optimistic]);
     
     try {
