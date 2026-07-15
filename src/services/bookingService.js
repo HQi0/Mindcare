@@ -1,5 +1,4 @@
 import { supabase } from '../lib/supabaseClient';
-import { getCurrentDatabaseUser } from './authService.js';
 
 const mockDelay = (data, ms = 300) =>
   new Promise((resolve) => setTimeout(() => resolve({ data }), ms));
@@ -88,17 +87,20 @@ export async function getBookingSummary() {
   return res.data;
 }
 
+// ============================================================
+// PERBAIKAN: MENGGUNAKAN AMBIL USER SESI ASLI DARI SUPABASE AUTH
+// ============================================================
 export async function getMyBookings() {
-  const currentUser = await getCurrentDatabaseUser();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  if (!currentUser?.id) {
+  if (!user?.id) {
     return [];
   }
 
   const { data, error } = await supabase
     .from('bookings')
     .select('id, counselor_id, session_type, scheduled_at, status, created_at, counselor:counselors(id, full_name, specialization, avatar_url)')
-    .eq('user_id', currentUser.id)
+    .eq('user_id', user.id)
     .order('created_at', { ascending: false });
 
   if (error) {
@@ -110,9 +112,9 @@ export async function getMyBookings() {
 }
 
 export async function confirmBooking(payload) {
-  const currentUser = await getCurrentDatabaseUser();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  if (!currentUser?.id) {
+  if (!user?.id) {
     throw new Error('Silakan login terlebih dahulu untuk melakukan booking.');
   }
 
@@ -124,7 +126,7 @@ export async function confirmBooking(payload) {
   }
 
   const { error } = await supabase.from('bookings').insert({
-    user_id: currentUser.id,
+    user_id: user.id,
     counselor_id: payload.counselor,
     session_type: 'online',
     scheduled_at: scheduledAt,
@@ -140,9 +142,9 @@ export async function confirmBooking(payload) {
 }
 
 export async function deleteBooking(bookingId) {
-  const currentUser = await getCurrentDatabaseUser();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  if (!currentUser?.id) {
+  if (!user?.id) {
     throw new Error('Silakan login terlebih dahulu untuk menghapus booking.');
   }
 
@@ -150,7 +152,7 @@ export async function deleteBooking(bookingId) {
     .from('bookings')
     .delete()
     .eq('id', bookingId)
-    .eq('user_id', currentUser.id);
+    .eq('user_id', user.id);
 
   if (error) {
     throw new Error(error.message);

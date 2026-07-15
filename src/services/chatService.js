@@ -1,61 +1,82 @@
-const mockDelay = (data, ms = 300) =>
-  new Promise((resolve) => setTimeout(() => resolve({ data }), ms));
+import { supabase } from '../lib/supabaseClient';
 
-const DUMMY_CONVERSATIONS = [
-  {
-    id: 'siti-aminah',
-    name: 'Siti Aminah, M.Psi',
-    role: 'Spesialis Kecemasan Akademik',
-    online: true,
-    lastMessage: 'Bagaimana perasaanmu hari ini?',
-    lastTime: '10:42',
-  },
-  {
-    id: 'budi-santoso',
-    name: 'Dr. Budi Santoso',
-    role: 'Psikolog Klinis',
-    online: false,
-    lastMessage: 'Terima kasih atas sesinya kemarin.',
-    lastTime: 'Kemarin',
-  },
-  {
-    id: 'larasati-putri',
-    name: 'Larasati Putri, M.Psi',
-    role: 'Konselor Akademik',
-    online: true,
-    lastMessage: 'Saya sudah membaca jurnalmu.',
-    lastTime: 'Senin',
-    read: true,
-  },
-];
-
-const DUMMY_MESSAGES = {
-  'siti-aminah': [
-    { id: 'm1', from: 'counselor', time: '10:40', text: 'Halo! Saya sudah membaca catatan mood kamu pagi ini. Sepertinya kamu merasa cukup kewalahan dengan tugas akhir ya?' },
-    { id: 'm2', from: 'me', time: '10:42', text: 'Iya benar Bu. Saya merasa buntu dan mulai meragukan kemampuan saya sendiri. Rasanya ingin menyerah saja.' },
-    { id: 'm3', from: 'counselor', time: '10:42', text: 'Wajar sekali merasa seperti itu saat berada di bawah tekanan besar. Ingat, perasaan ini bersifat sementara.' },
-    { id: 'm4', from: 'counselor', time: '10:43', text: 'Mari kita coba teknik "Grounding" sebentar. Bisakah kamu sebutkan 3 hal yang bisa kamu sentuh saat ini?' },
-  ],
-};
-
+/**
+ * Mendapatkan daftar unik para konselor yang pernah melakukan chat dengan user saat ini
+ */
 export async function getConversations() {
-  const res = await mockDelay(DUMMY_CONVERSATIONS);
-  return res.data;
-}
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
 
-export async function getMessages(conversationId) {
-  // const res = await api.get(`/chat/${conversationId}/messages`);
-  const res = await mockDelay(DUMMY_MESSAGES[conversationId] || []);
-  return res.data;
-}
+  // Ambil semua pesan milik user saat ini
+  const { data, error } = await supabase
+    .from('chat_messages')
+    .select('counselor_id, message, created_at, counselor:counselors(id, full_name, specialization, avatar_url)')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false });
 
-export async function sendMessage(_conversationId, text) {
-  // const res = await api.post(`/chat/${conversationId}/messages`, { text });
-  const res = await mockDelay({
-    id: `m${Date.now()}`,
-    from: 'me',
-    time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
-    text,
+  if (error) throw new Error(error.message);
+
+  // Grouping pesan terakhir berdasarkan konselor (Unik)
+  const uniqueCounselors = {};
+  (data || []).forEach((msg) => {
+    if (!msg.counselor_id || uniqueCounselors[msg.counselor_id]) return;
+    
+    const scheduledTime = new Date(msg.created_at);
+    uniqueCounselors[msg.counselor_id] = {
+      id: msg.counselor.id,
+      name: msg.counselor.full_name,
+      role: msg.counselor.specialization || 'Konselor Psikologi',
+      online: true, // Statis atau bisa dikembangkan kemudian
+      lastMessage: msg.message,
+      lastTime: scheduledTime.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+    };
   });
-  return res.data;
+
+  return Object.values(uniqueCounselors);
+}
+
+/**
+ * Mengambil history obrolan spesifik dengan satu konselor
+ */
+export async function getMessages(counselorId) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data, error } = await supabase
+    .from('chat_messages')
+    .select('id, sender, message, created_at')
+    .eq('user_id', user.id)
+    .eq('counselor_id', counselorId)
+    .order('created_at', { ascending: true });
+
+  if (error) throw new Error(error.message);
+
+  return (data || []).map((msg) => ({
+    id: msg.id,
+    from: msg.sender === 'user' ? 'me' : 'counselor',
+    time: new Date(msg.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+    text: msg.message,
+  }));
+}
+
+/**
+ * Mengirim pesan baru ke database Supabase
+ */
+export async function sendMessage(counselorId, text) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Akses ditolak. Silakan login terlebih dahulu.');
+
+  const { data, error } = await supabase
+    .from('chat_messages')
+    .insert({
+      user_id: user.id,
+      counselor_id: counselorId,
+      sender: 'user',
+      message: text
+    })
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data;
 }

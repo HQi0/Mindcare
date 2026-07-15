@@ -3,6 +3,7 @@ import useFetch from '../hooks/useFetch.js';
 import { getCounselors, getTimeSlots, getBookingSummary, getMyBookings, confirmBooking, deleteBooking } from '../services/bookingService.js';
 import { BookingStepper } from '../components/booking/BookingCards.jsx';
 import { CalendarCard, BookingSummaryCard } from '../components/booking/BookingCalendar.jsx';
+import { supabase } from '../lib/supabaseClient';
 
 const CALENDAR_LABEL_FORMATTER = new Intl.DateTimeFormat('id-ID', {
   weekday: 'long',
@@ -13,7 +14,6 @@ const CALENDAR_LABEL_FORMATTER = new Intl.DateTimeFormat('id-ID', {
 });
 
 const CALENDAR_MAX_MONTH = 11;
-const JAKARTA_DAY_START_HOUR = 5;
 
 function getJakartaDateParts(date = new Date()) {
   const formatter = new Intl.DateTimeFormat('en-CA', {
@@ -38,30 +38,31 @@ function getJakartaDateParts(date = new Date()) {
 }
 
 function buildMonthDates(year, monthIndex) {
-  const totalDays = new Date(Date.UTC(year, monthIndex + 1, 0)).getUTCDate();
+  const totalDays = new Date(year, monthIndex + 1, 0).getDate();
 
   return Array.from({ length: totalDays }, (_, index) => {
     const day = index + 1;
     const dateId = `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    const utcDate = new Date(Date.UTC(year, monthIndex, day, JAKARTA_DAY_START_HOUR, 0, 0));
+    const localDate = new Date(year, monthIndex, day);
 
     return {
       id: dateId,
       day,
-      label: CALENDAR_LABEL_FORMATTER.format(utcDate),
-      weekdayIndex: utcDate.getUTCDay(),
+      label: CALENDAR_LABEL_FORMATTER.format(localDate),
+      weekdayIndex: localDate.getDay(),
       monthIndex,
       year,
     };
   });
 }
 
+// Perbaikan: Pembentukan kalender lokal agar nama hari dan tanggalnya sejajar 100% akurat
 function buildCalendarMonths() {
   const today = getJakartaDateParts();
 
   return Array.from({ length: CALENDAR_MAX_MONTH - today.month + 1 }, (_, index) => {
     const monthIndex = today.month + index;
-    const monthDate = new Date(Date.UTC(today.year, monthIndex, 1, JAKARTA_DAY_START_HOUR, 0, 0));
+    const monthDate = new Date(today.year, monthIndex, 1);
 
     return {
       id: `${today.year}-${String(monthIndex + 1).padStart(2, '0')}`,
@@ -82,14 +83,7 @@ const TODAY_JAKARTA = getJakartaDateParts();
 
 function getInitials(name) {
   if (!name) return 'KC';
-
-  return name
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join('')
-    .toUpperCase();
+  return name.split(' ').filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase();
 }
 
 function formatBookingTime(slot) {
@@ -98,12 +92,9 @@ function formatBookingTime(slot) {
 
 function buildScheduledAt(dateId, slotTime) {
   if (!dateId || !slotTime) return null;
-
   const [startTime] = slotTime.split(' - ');
   const [hours, minutes] = startTime.split(':');
-
   if (!hours || !minutes) return null;
-
   return `${dateId}T${hours}:${minutes}:00+07:00`;
 }
 
@@ -120,6 +111,8 @@ export default function BookingSession() {
   const [submitError, setSubmitError] = useState(null);
   const [deletingBookingId, setDeletingBookingId] = useState(null);
   const [currentTime, setCurrentTime] = useState(() => Date.now());
+  
+  const [globalBookedStrings, setGlobalBookedStrings] = useState([]);
 
   const selectedMonth = CALENDAR_MONTHS[selectedMonthIndex] ?? CALENDAR_MONTHS[0];
   const currentMonthIsSelected = selectedMonth?.monthIndex === TODAY_JAKARTA.month && selectedMonth?.year === TODAY_JAKARTA.year;
@@ -129,9 +122,29 @@ export default function BookingSession() {
       if (!currentMonthIsSelected) return true;
       return date.day >= TODAY_JAKARTA.day;
     });
-
     return availableDate ?? selectedMonth?.dates[0] ?? null;
   });
+
+  const fetchGlobalBookings = async () => {
+    try {
+      if (!selectedCounselor) return;
+      const { data, error } = await supabase
+        .from('bookings')
+        .select('scheduled_at')
+        .eq('counselor_id', selectedCounselor);
+
+      if (data) {
+        const isoStrings = data.map(b => new Date(b.scheduled_at).toISOString());
+        setGlobalBookedStrings(isoStrings);
+      }
+    } catch (err) {
+      console.error('Gagal memuat jadwal global terbooking:', err.message);
+    }
+  };
+
+  useEffect(() => {
+    fetchGlobalBookings();
+  }, [selectedCounselor]);
 
   useEffect(() => {
     if (!selectedCounselor && counselors?.length) {
@@ -142,8 +155,7 @@ export default function BookingSession() {
   useEffect(() => {
     const intervalId = window.setInterval(() => {
       setCurrentTime(Date.now());
-    }, 60000);
-
+    }, 5000);
     return () => window.clearInterval(intervalId);
   }, []);
 
@@ -165,14 +177,40 @@ export default function BookingSession() {
     }
   }, [selectedMonth, currentMonthIsSelected, selectedDate]);
 
+  // Evaluasi dinamis: Menentukan status 'past' (jam lewat) atau 'booked' (sudah dipesan)
+  const dynamicSlots = useMemo(() => {
+    if (!slots || !selectedDate) return [];
+
+    return slots.map((slot) => {
+      const generatedIso = buildScheduledAt(selectedDate.id, slot.time);
+      if (!generatedIso) return slot;
+
+      const currentSlotDate = new Date(generatedIso);
+      const slotStartTimestamp = currentSlotDate.getTime();
+
+      // 1. Cek Jam Lewat (Mendapatkan prioritas override paling tinggi)
+      if (slotStartTimestamp < currentTime) {
+        return { ...slot, status: 'past' }; 
+      }
+
+      // 2. Cek database apakah sudah dibooking user lain
+      const isAlreadyBooked = globalBookedStrings.includes(currentSlotDate.toISOString());
+      if (isAlreadyBooked) {
+        return { ...slot, status: 'booked' }; 
+      }
+
+      return slot;
+    });
+  }, [slots, selectedDate, globalBookedStrings, currentTime]);
+
   const selectedCounselorData = useMemo(
     () => counselors?.find((counselor) => counselor.id === selectedCounselor) ?? counselors?.[0] ?? null,
     [counselors, selectedCounselor]
   );
 
   const selectedSlotData = useMemo(
-    () => slots?.find((slot) => slot.id === selectedSlot) ?? null,
-    [slots, selectedSlot]
+    () => dynamicSlots?.find((slot) => slot.id === selectedSlot) ?? null,
+    [dynamicSlots, selectedSlot]
   );
 
   const bookingSummary = useMemo(
@@ -182,24 +220,36 @@ export default function BookingSession() {
       counselorAvatarUrl: selectedCounselorData?.avatarUrl ?? null,
       method: selectedCounselorData?.mode ?? summary?.method,
       date: selectedDate?.label ?? summary?.date,
-      time: formatBookingTime(selectedSlotData) === 'Belum dipilih' ? summary?.time : formatBookingTime(selectedSlotData),
+      time: formatBookingTime(selectedSlotData) === 'Belum dipilih' || selectedSlotData?.status === 'past' || selectedSlotData?.status === 'booked' ? summary?.time : formatBookingTime(selectedSlotData),
     }),
     [summary, selectedCounselorData, selectedDate, selectedSlotData]
   );
 
   const visibleBookings = useMemo(() => {
-    return (myBookings || []).filter((booking) => booking.scheduledAt && booking.scheduledAt.getTime() >= currentTime);
+    return (myBookings || [])
+      .map((booking) => {
+        if (!booking.scheduledAt) return booking;
+
+        const sessionStart = booking.scheduledAt.getTime();
+        const sessionEnd = sessionStart + (60 * 60 * 1000); 
+        const now = currentTime;
+
+        if (now >= sessionStart && now <= sessionEnd) {
+          return { ...booking, displayStatus: 'aktif' };
+        }
+        return { ...booking, displayStatus: booking.status };
+      })
+      .filter((booking) => {
+        if (!booking.scheduledAt) return false;
+        const sessionEndTimestamp = booking.scheduledAt.getTime() + (60 * 60 * 1000);
+        return currentTime <= sessionEndTimestamp;
+      });
   }, [myBookings, currentTime]);
 
   const selectDate = (dateId) => {
     const nextDate = selectedMonth?.dates.find((date) => date.id === dateId) ?? null;
-
     if (!nextDate) return;
-
-    if (currentMonthIsSelected && nextDate.day < TODAY_JAKARTA.day) {
-      return;
-    }
-
+    if (currentMonthIsSelected && nextDate.day < TODAY_JAKARTA.day) return;
     setSelectedDate(nextDate);
   };
 
@@ -212,16 +262,46 @@ export default function BookingSession() {
   };
 
   const handleConfirm = async () => {
+    const targetScheduledTime = buildScheduledAt(selectedDate?.id, selectedSlotData?.time);
+    
+    if (!targetScheduledTime || selectedSlotData?.status === 'booked' || selectedSlotData?.status === 'past') {
+      alert('Maaf, slot waktu ini tidak tersedia atau sudah melewati batas jam booking.');
+      return;
+    }
+
     setSubmitting(true);
     setSubmitError(null);
+    
     try {
+      const isoTargetToCheck = new Date(targetScheduledTime).toISOString();
+
+      const { data: duplicateCheck, error: checkError } = await supabase
+        .from('bookings')
+        .select('id, scheduled_at')
+        .eq('counselor_id', selectedCounselor);
+
+      if (checkError) throw checkError;
+
+      const isConflictDetected = duplicateCheck?.some(
+        b => new Date(b.scheduled_at).toISOString() === isoTargetToCheck
+      );
+
+      if (isConflictDetected) {
+        alert('Gagal! Slot waktu baru saja diambil oleh mahasiswa lain beberapa saat lalu.');
+        await fetchGlobalBookings(); 
+        setSubmitting(false);
+        return;
+      }
+
       await confirmBooking({
         counselor: selectedCounselor,
         slot: selectedSlot,
-        scheduledAt: buildScheduledAt(selectedDate?.id, selectedSlotData?.time),
+        scheduledAt: targetScheduledTime,
         dateLabel: selectedDate?.label,
       });
+
       await refetchBookings();
+      await fetchGlobalBookings(); 
     } catch (error) {
       setSubmitError(error.message || 'Booking gagal. Silakan coba lagi.');
     } finally {
@@ -231,10 +311,7 @@ export default function BookingSession() {
 
   const handleDeleteBooking = async (bookingId) => {
     const confirmed = window.confirm('Hapus booking ini?');
-
-    if (!confirmed) {
-      return;
-    }
+    if (!confirmed) return;
 
     setDeletingBookingId(bookingId);
     setSubmitError(null);
@@ -242,6 +319,7 @@ export default function BookingSession() {
     try {
       await deleteBooking(bookingId);
       await refetchBookings();
+      await fetchGlobalBookings();
     } catch (error) {
       setSubmitError(error.message || 'Booking gagal dihapus.');
     } finally {
@@ -296,21 +374,9 @@ export default function BookingSession() {
                           <td className="px-4 py-4 align-top">
                             <div className="size-12 rounded-full overflow-hidden bg-dash-primary/10 border border-auth-card flex items-center justify-center shrink-0">
                               {counselor.avatarUrl ? (
-                                <img
-                                  src={counselor.avatarUrl}
-                                  alt={counselor.name}
-                                  className="size-full object-cover"
-                                  onError={(event) => {
-                                    event.currentTarget.style.display = 'none';
-                                    const fallback = event.currentTarget.parentElement?.querySelector('[data-fallback]');
-                                    if (fallback) fallback.style.display = 'flex';
-                                  }}
-                                />
+                                <img src={counselor.avatarUrl} alt={counselor.name} className="size-full object-cover" />
                               ) : null}
-                              <span
-                                data-fallback
-                                className={`size-full items-center justify-center text-sm font-semibold text-dash-primary ${counselor.avatarUrl ? 'hidden' : 'flex'}`}
-                              >
+                              <span data-fallback className={`size-full items-center justify-center text-sm font-semibold text-dash-primary ${counselor.avatarUrl ? 'hidden' : 'flex'}`}>
                                 {getInitials(counselor.name)}
                               </span>
                             </div>
@@ -351,11 +417,10 @@ export default function BookingSession() {
                 </table>
               </div>
             ) : (
-              <div className="p-6 text-sm text-dash-muted">
-                Belum ada data konselor di database.
-              </div>
+              <div className="p-6 text-sm text-dash-muted">Belum ada data konselor di database.</div>
             )}
           </div>
+          
           <CalendarCard
             dates={selectedMonth?.dates ?? []}
             monthLabel={selectedMonth?.label}
@@ -365,10 +430,11 @@ export default function BookingSession() {
             canGoPrevious={selectedMonthIndex > 0}
             canGoNext={selectedMonthIndex < CALENDAR_MONTHS.length - 1}
             onSelectDate={selectDate}
-            slots={slots}
+            slots={dynamicSlots} 
             selectedSlot={selectedSlot}
             onSelectSlot={setSelectedSlot}
             todayDateId={`${TODAY_JAKARTA.year}-${String(TODAY_JAKARTA.month + 1).padStart(2, '0')}-${String(TODAY_JAKARTA.day).padStart(2, '0')}`}
+            selectedDateId={selectedDate?.id}
           />
         </div>
         <div className="md:col-span-4">
@@ -410,9 +476,17 @@ export default function BookingSession() {
                   <span className="rounded-full bg-dash-primary/10 px-3 py-1 text-[11px] font-semibold text-dash-primary">
                     {booking.sessionType === 'online' ? 'Online' : 'Tatap Muka'}
                   </span>
-                  <span className={`rounded-full px-3 py-1 text-[11px] font-semibold ${booking.status === 'dikonfirmasi' ? 'bg-dash-success/10 text-dash-success' : booking.status === 'selesai' ? 'bg-dash-primary/10 text-dash-primary' : 'bg-[#eceef0] text-dash-linkMuted'}`}>
-                    {booking.status}
+                  
+                  <span className={`rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wider ${
+                    booking.displayStatus === 'aktif' 
+                      ? 'bg-red-100 text-red-600 border border-red-200 animate-pulse' 
+                      : booking.displayStatus === 'dikonfirmasi' 
+                      ? 'bg-dash-success/10 text-dash-success' 
+                      : 'bg-blue-50 text-blue-600 border border-blue-100'
+                  }`}>
+                    {booking.displayStatus}
                   </span>
+                  
                   <button
                     type="button"
                     onClick={() => handleDeleteBooking(booking.id)}
@@ -426,9 +500,7 @@ export default function BookingSession() {
             ))}
           </div>
         ) : (
-          <div className="p-6 text-sm text-dash-muted">
-            Belum ada booking yang tersimpan.
-          </div>
+          <div className="p-6 text-sm text-dash-muted">Belum ada booking yang tersimpan.</div>
         )}
       </section>
     </div>
