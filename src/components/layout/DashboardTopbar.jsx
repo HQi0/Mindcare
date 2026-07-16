@@ -290,9 +290,13 @@ export default function DashboardTopbar() {
 
           <Link
             to="/profile"
-            className="size-8 rounded-full bg-dash-primary/10 text-dash-primary flex items-center justify-center text-xs font-bold border border-dash-border"
+            className="size-8 rounded-full bg-dash-primary/10 text-dash-primary flex items-center justify-center text-xs font-bold border border-dash-border overflow-hidden"
           >
-            {getInitials(user?.name)}
+            {user?.avatar_url ? (
+              <img src={user.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+            ) : (
+              getInitials(user?.name)
+            )}
           </Link>
         </div>
       </div>

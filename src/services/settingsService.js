@@ -18,9 +18,9 @@ const DUMMY_PRIVACY_SETTINGS = [
 ];
 
 const DUMMY_APP_SETTINGS = [
-  { id: 'darkmode', label: 'Mode Gelap', description: 'Gunakan tampilan gelap untuk mengurangi kelelahan mata.', type: 'button' },
+  { id: 'darkmode', label: 'Mode Gelap', description: 'Gunakan tampilan gelap untuk mengurangi kelelahan mata.', enabled: false },
   { id: 'language', label: 'Bahasa Aplikasi', description: 'Saat ini: Bahasa Indonesia', type: 'select', value: 'Bahasa Indonesia' },
-  { id: 'notifications', label: 'Notifikasi Push', description: 'Atur jadwal pengingat untuk check-in harian.', type: 'toggle', enabled: true },
+  { id: 'notifications', label: 'Notifikasi Push', description: 'Atur jadwal pengingat untuk check-in harian.', enabled: true },
 ];
 
 const DUMMY_SESSIONS = [
@@ -100,7 +100,7 @@ export async function getProfile() {
   try {
     const { data: profileData, error } = await supabase
       .from('profiles')
-      .select('full_name, anonymous_id')
+      .select('full_name, anonymous_id, avatar_url')
       .eq('id', storedUser.id)
       .single();
 
@@ -115,6 +115,7 @@ export async function getProfile() {
       anonymousId: profileData?.anonymous_id || DUMMY_PROFILE.anonymousId,
       wellbeingScore: dynamicWellbeing.score,
       wellbeingNote: dynamicWellbeing.note,
+      avatar_url: profileData?.avatar_url || null,
     };
   } catch (err) {
     console.error('Error fetching profile from Supabase:', err);
@@ -124,6 +125,57 @@ export async function getProfile() {
       subtitle: storedUser?.email || DUMMY_PROFILE.subtitle,
     };
   }
+}
+
+export async function updateProfile(alias, subtitle, avatarFile) {
+  const storedUser = await getCurrentDatabaseUser();
+  if (!storedUser || storedUser.id === 'usr_guest') {
+    throw new Error('Anda harus login untuk mengubah profil');
+  }
+
+  let avatarUrl = undefined;
+
+  // 1. Upload foto profil jika ada
+  if (avatarFile) {
+    const fileExt = avatarFile.name.split('.').pop();
+    const fileName = `${storedUser.id}-${Date.now()}.${fileExt}`;
+    const filePath = `${storedUser.id}/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('avatars')
+      .upload(filePath, avatarFile, { upsert: true });
+
+    if (uploadError) {
+      throw new Error(`Gagal mengunggah foto profil: ${uploadError.message}`);
+    }
+
+    // Dapatkan public URL
+    const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
+    avatarUrl = data.publicUrl;
+  }
+
+  // 2. Update tabel profiles
+  const updates = {
+    full_name: alias,
+  };
+  
+  if (avatarUrl) {
+    updates.avatar_url = avatarUrl;
+  }
+
+  const { error } = await supabase
+    .from('profiles')
+    .update(updates)
+    .eq('id', storedUser.id);
+
+  if (error) {
+    throw new Error(`Gagal menyimpan profil: ${error.message}`);
+  }
+
+  // Opsional: update user metadata di auth jika perlu konsistensi
+  await supabase.auth.updateUser({
+    data: { full_name: alias }
+  });
 }
 
 export async function getPrivacySettings() {

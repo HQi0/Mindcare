@@ -86,6 +86,32 @@ export async function getCurrentDatabaseUser() {
   return normalizeUser(data.user);
 }
 
+export async function updatePassword(oldPassword, newPassword) {
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError || !userData?.user) {
+    throw new Error('Sesi tidak valid, silakan login kembali');
+  }
+
+  // 1. Verifikasi password lama dengan mencoba login ulang
+  const { error: signInError } = await supabase.auth.signInWithPassword({
+    email: userData.user.email,
+    password: oldPassword,
+  });
+
+  if (signInError) {
+    throw new Error('Password saat ini salah');
+  }
+
+  // 2. Update password baru
+  const { error: updateError } = await supabase.auth.updateUser({
+    password: newPassword,
+  });
+
+  if (updateError) {
+    throw new Error(`Gagal mengubah password: ${updateError.message}`);
+  }
+}
+
 /**
  * Login dengan email & password.
  * @param {{ email: string, password: string }} payload

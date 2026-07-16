@@ -9,9 +9,20 @@ const DUMMY_USER = { id: 'usr_dummy', name: 'Pengguna MindCare', avatarInitials:
 export async function getCurrentUser() {
   const storedUser = await getCurrentDatabaseUser();
   if (storedUser) {
+    let avatarUrl = null;
+    if (storedUser.id !== 'usr_guest') {
+      const { data } = await supabase
+        .from('profiles')
+        .select('avatar_url')
+        .eq('id', storedUser.id)
+        .single();
+      avatarUrl = data?.avatar_url;
+    }
+
     return {
       ...DUMMY_USER,
       ...storedUser,
+      avatar_url: avatarUrl,
       avatarInitials: storedUser.fullName
         .split(' ')
         .filter(Boolean)
