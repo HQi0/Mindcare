@@ -55,9 +55,6 @@ export function RecommendationBanner() {
         <Link to="/self-assessment" className="rounded-lg bg-white px-8 py-3 text-dash-primary text-sm shadow-lg font-bold">
           Mulai Penilaian
         </Link>
-        <button type="button" className="rounded-lg border border-white/20 bg-white/10 px-8 py-3 text-white text-sm">
-          Pelajari Caranya
-        </button>
       </div>
     </div>
   );

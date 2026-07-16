@@ -60,20 +60,6 @@ export function ArticleContent({ article }) {
           {para}
         </p>
       ))}
-
-      <div className="border-t border-auth-card flex items-center justify-between pt-8 mt-4">
-        <div className="flex gap-4">
-          <button type="button" className="flex items-center gap-2 rounded-full bg-dash-primary/10 text-dash-primary font-semibold px-5 py-2.5 text-sm hover:bg-dash-primary hover:text-white transition-colors">
-            <ThumbsUp size={16} /> Sangat Bermanfaat
-          </button>
-          <button type="button" className="flex items-center gap-2 rounded-full border border-auth-card px-5 py-2.5 text-sm text-dash-muted hover:border-dash-primary/40 hover:text-dash-text transition-colors">
-            <Share2 size={16} /> Bagikan
-          </button>
-        </div>
-        <button type="button" className="size-12 rounded-full border border-auth-card flex items-center justify-center text-dash-muted hover:text-dash-primary hover:border-dash-primary/40 transition-colors">
-          <Bookmark size={18} />
-        </button>
-      </div>
     </article>
   );
 }
@@ -89,17 +75,14 @@ export function ArticleSidebar({ article }) {
           <p className="font-bold text-dash-text text-lg">{article.author.name}</p>
           <p className="text-[14px] text-dash-muted leading-relaxed mt-2">{article.author.bio}</p>
         </div>
-        <button type="button" className="w-full rounded-xl bg-dash-primary/10 text-dash-primary font-bold py-3 text-sm hover:bg-dash-primary hover:text-white transition-colors mt-2">
-          Jadwalkan Konsultasi
-        </button>
       </div>
 
       <div className="rounded-xl2 p-8 flex flex-col gap-3 bg-gradient-to-br from-dash-primary to-[#003896] text-white shadow-md relative overflow-hidden">
         <div className="absolute -top-10 -right-10 size-40 bg-white/10 rounded-full blur-2xl" />
-        <p className="text-[22px] leading-tight font-bold relative z-10">Butuh Teman Bicara?</p>
-        <p className="text-[14px] leading-relaxed text-white/90 relative z-10">Konselor profesional kami tersedia untuk mendengarkan cerita dan mendampingi masa-masa sulitmu.</p>
-        <Link to="/counselor-chat" className="mt-4 w-full text-center rounded-xl bg-white text-dash-primary text-sm font-bold px-4 py-3 hover:bg-gray-50 transition-colors relative z-10 shadow-sm">
-          Chat Konselor Sekarang
+        <p className="text-[22px] leading-tight font-bold relative z-10">Booking Sesi</p>
+        <p className="text-[14px] leading-relaxed text-white/90 relative z-10">Jadwalkan sesi konseling privat dengan konselor profesional kami untuk mendampingi masa-masa sulitmu.</p>
+        <Link to="/schedule-session" className="mt-4 w-full text-center rounded-xl bg-white text-dash-primary text-sm font-bold px-4 py-3 hover:bg-gray-50 transition-colors relative z-10 shadow-sm">
+          Booking Sesi Sekarang
         </Link>
       </div>
     </aside>
