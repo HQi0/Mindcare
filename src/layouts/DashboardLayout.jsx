@@ -16,8 +16,11 @@ export default function DashboardLayout() {
   // Check if current user is guest
   const isGuest = localStorage.getItem('mindcare_guest') === 'true';
 
-  // Allowed paths for guest: /self-assessment and its details
-  const isAllowedPath = path === '/self-assessment' || path.startsWith('/self-assessment/');
+  // Allowed paths for guest: /self-assessment, its details, and /emergency-help
+  const isAllowedPath = 
+    path === '/self-assessment' || 
+    path.startsWith('/self-assessment/') || 
+    path === '/emergency-help';
 
   // Show lock modal if guest tries to access any other page
   const isLocked = isGuest && !isAllowedPath;

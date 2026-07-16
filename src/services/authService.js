@@ -52,6 +52,10 @@ function normalizeUser(user, fallbackEmail) {
 export function setStoredAuth({ token, user }) {
   if (token) {
     localStorage.setItem(AUTH_TOKEN_KEY, token);
+    if (token !== 'dummy-guest-token') {
+      localStorage.removeItem('mindcare_guest');
+      localStorage.removeItem('mindcare_guest_assessments');
+    }
   }
 }
 
