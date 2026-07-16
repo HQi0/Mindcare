@@ -17,7 +17,7 @@ function getInitials(name) {
 export function IdentityCard({ profile, onEditClick }) {
   if (!profile) return null;
   return (
-    <div className="flex-1 bg-white border border-auth-card rounded-xl p-6 flex items-center gap-6 relative overflow-hidden">
+    <div className="flex-1 bg-white border border-auth-card rounded-xl p-6 flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-6 relative overflow-hidden">
       <button 
         type="button"
         onClick={onEditClick}
@@ -33,14 +33,14 @@ export function IdentityCard({ profile, onEditClick }) {
           {getInitials(profile.alias)}
         </span>
       )}
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col items-center sm:items-start gap-1">
         <h2 className="text-[22px] leading-8 font-semibold tracking-[-0.22px] text-dash-text">{profile.alias}</h2>
         <p className="text-dash-muted text-base">{profile.subtitle}</p>
-        <div className="flex gap-2 pt-2">
-          <span className="flex items-center gap-1.5 rounded-full bg-dash-success/10 px-2 py-0.5 text-[11px] text-dash-success">
+        <div className="flex flex-wrap justify-center sm:justify-start gap-2 pt-2">
+          <span className="flex items-center gap-1.5 rounded-full bg-dash-success/10 px-2.5 py-1 text-[11px] text-dash-success font-medium">
             <span className="size-1.5 rounded-full bg-dash-success" /> Status: Anonim Aktif
           </span>
-          <span className="rounded-full bg-dash-primary/10 px-2 py-0.5 text-[11px] text-dash-primary">ID: {profile.anonymousId}</span>
+          <span className="rounded-full bg-dash-primary/10 px-2.5 py-1 text-[11px] text-dash-primary font-medium">ID: {profile.anonymousId}</span>
         </div>
       </div>
     </div>
@@ -50,7 +50,7 @@ export function IdentityCard({ profile, onEditClick }) {
 export function WellbeingCard({ profile }) {
   if (!profile) return null;
   return (
-    <div className="w-80 shrink-0 bg-white border border-auth-card rounded-xl p-6 flex flex-col justify-between">
+    <div className="w-full md:w-80 shrink-0 bg-white border border-auth-card rounded-xl p-6 flex flex-col justify-between">
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <span className="text-base text-dash-muted">Skor Kesejahteraan</span>

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import Sidebar from '../components/layout/Sidebar.jsx';
 import DashboardTopbar from '../components/layout/DashboardTopbar.jsx';
@@ -9,6 +10,7 @@ import { Lock } from 'lucide-react';
  * discroll di area kanan dengan padding menyesuaikan lebar sidebar.
  */
 export default function DashboardLayout() {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const path = location.pathname;
@@ -35,10 +37,19 @@ export default function DashboardLayout() {
 
   return (
     <div className="min-h-screen bg-[#f7f9fb]">
-      <Sidebar />
-      <DashboardTopbar />
-      <main className="pl-[220px] pt-14">
-        <div className="max-w-[1152px] mx-auto p-6 flex flex-col gap-6">
+      <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+      <DashboardTopbar onMenuClick={() => setIsSidebarOpen(true)} />
+      
+      {/* Mobile Sidebar Backdrop Overlay */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-[#0c111d]/40 backdrop-blur-sm z-30 md:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
+      <main className="pl-0 md:pl-[220px] pt-14">
+        <div className="max-w-[1152px] mx-auto p-4 md:p-6 flex flex-col gap-6">
           <Outlet />
         </div>
       </main>

@@ -1,4 +1,4 @@
-import { Search, Bell, CornerDownLeft } from 'lucide-react';
+import { Search, Bell, CornerDownLeft, Menu } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import useFetch from '../../hooks/useFetch.js';
@@ -23,7 +23,7 @@ function getInitials(name) {
   return name.split(' ').filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase();
 }
 
-export default function DashboardTopbar() {
+export default function DashboardTopbar({ onMenuClick }) {
   const navigate = useNavigate();
   const { data: user } = useFetch(getCurrentUser, []);
   
@@ -196,9 +196,17 @@ export default function DashboardTopbar() {
   };
 
   return (
-    <header className="fixed top-0 left-[220px] right-0 h-14 bg-dash-sidebar border-b border-dash-border flex items-center justify-between px-6 z-30">
-      <div className="flex-1 max-w-[256px] relative">
-        <div className="relative">
+    <header className="fixed top-0 left-0 md:left-[220px] right-0 h-14 bg-dash-sidebar border-b border-dash-border flex items-center justify-between px-4 md:px-6 z-30">
+      <div className="flex items-center gap-3 flex-1 max-w-[256px] relative">
+        <button
+          onClick={onMenuClick}
+          className="md:hidden p-1.5 rounded-lg hover:bg-dash-border/40 text-dash-muted transition-colors cursor-pointer"
+          type="button"
+          aria-label="Buka Menu"
+        >
+          <Menu size={20} />
+        </button>
+        <div className="relative flex-1">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-dash-muted" />
           <input
             type="text"
@@ -244,7 +252,7 @@ export default function DashboardTopbar() {
       <div className="flex items-center gap-4">
         <Link
           to="/emergency-help"
-          className="bg-dash-primary text-white text-sm font-semibold rounded-full px-4 py-1.5"
+          className="hidden sm:block bg-dash-primary text-white text-sm font-semibold rounded-full px-4 py-1.5"
         >
           Bantuan Darurat
         </Link>

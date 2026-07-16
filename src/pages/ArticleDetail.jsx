@@ -18,7 +18,7 @@ export default function ArticleDetail() {
   return (
     <div className="flex flex-col gap-12">
       <ArticleHero article={article} />
-      <div className="flex gap-12 items-start">
+      <div className="flex flex-col lg:flex-row gap-8 lg:gap-12 items-start">
         <ArticleContent article={article} />
         <ArticleSidebar article={article} />
       </div>

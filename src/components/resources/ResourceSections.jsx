@@ -45,14 +45,14 @@ export function ResourceGrid({ articles }) {
 
 export function RecommendationBanner() {
   return (
-    <div className="bg-dash-primary rounded-2xl px-8 pt-12 pb-8 flex flex-col gap-2 w-full mt-6">
-      <h3 className="text-[22px] leading-8 font-semibold tracking-[-0.22px] text-white">Ingin rekomendasi personal?</h3>
-      <p className="text-[15px] text-white/90 max-w-xl">
+    <div className="bg-dash-primary rounded-2xl px-6 md:px-8 py-8 md:py-12 flex flex-col gap-2 w-full mt-6">
+      <h3 className="text-[20px] md:text-[22px] leading-normal md:leading-8 font-semibold tracking-[-0.22px] text-white">Ingin rekomendasi personal?</h3>
+      <p className="text-sm md:text-[15px] text-white/90 max-w-xl leading-relaxed">
         Ambil kuis penilaian diri singkat (2 menit) untuk menemukan sumber daya yang paling sesuai dengan kondisi mental
         Anda saat ini.
       </p>
       <div className="flex gap-4 pt-4">
-        <Link to="/self-assessment" className="rounded-lg bg-white px-8 py-3 text-dash-primary text-sm shadow-lg font-bold">
+        <Link to="/self-assessment" className="rounded-lg bg-white px-6 md:px-8 py-2.5 md:py-3 text-dash-primary text-sm shadow-lg font-bold">
           Mulai Penilaian
         </Link>
       </div>

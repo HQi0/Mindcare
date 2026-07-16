@@ -22,6 +22,7 @@ export default function CounselorChat() {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isSessionLocked, setIsSessionLocked] = useState(true);
+  const [showChatOnMobile, setShowChatOnMobile] = useState(false);
 
   useEffect(() => {
     const initChat = async () => {
@@ -65,6 +66,7 @@ export default function CounselorChat() {
           
           setConversations(historyConversations);
           setActiveId(targetCounselorId);
+          setShowChatOnMobile(true);
         } else {
           setConversations(historyConversations);
           if (historyConversations.length > 0 && historyConversations[0]) {
@@ -219,7 +221,7 @@ export default function CounselorChat() {
       localStorage.setItem('mindcare_chat_emergency', JSON.stringify(updatedMessages));
       
       setConversations(prev => 
-        prev.map(c => c && c.id === 'counselor-emergency-siaga' ? { ...c, lastMessage: text } : c)
+          prev.map(c => c && c.id === 'counselor-emergency-siaga' ? { ...c, lastMessage: text } : c)
       );
 
       // Simulate a therapist response after 1.5 seconds
@@ -274,26 +276,38 @@ export default function CounselorChat() {
   };
 
   return (
-    <div className="flex flex-col gap-4 -m-6 relative">
-      <div className="flex items-center justify-between px-6 pt-4">
+    <div className="flex flex-col gap-4 -m-4 md:-m-6 relative">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-6 pt-4">
         <h2 className="text-[22px] leading-8 font-semibold tracking-[-0.22px] text-dash-text">Chat Konselor</h2>
         <span className="flex items-center gap-1.5 text-xs text-dash-linkMuted">
           <ShieldCheck size={13} /> Identitas Anda dilindungi & percakapan bersifat rahasia.
         </span>
       </div>
-      <div className="flex border-t border-auth-card h-[720px]">
+      <div className="flex border-t border-auth-card h-[600px] md:h-[720px] bg-white rounded-xl overflow-hidden shadow-sm">
         {!loading ? (
           <>
-            <ConversationsList conversations={conversations || []} activeId={activeId} onSelect={setActiveId} />
-            <ChatWindow 
-              conversation={activeConversation} 
-              messages={messages || []} 
-              onSend={handleSend} 
-              isLocked={isSessionLocked}
-              onCallClick={() => {
-                if (!isSessionLocked) window.open("https://zoom.us/j/your-meeting-room", '_blank');
-              }}
-            />
+            <div className={`${showChatOnMobile ? 'hidden md:flex' : 'flex w-full md:w-auto md:shrink-0'}`}>
+              <ConversationsList 
+                conversations={conversations || []} 
+                activeId={activeId} 
+                onSelect={(id) => {
+                  setActiveId(id);
+                  setShowChatOnMobile(true);
+                }} 
+              />
+            </div>
+            <div className={`${showChatOnMobile ? 'flex flex-1' : 'hidden md:flex flex-1'}`}>
+              <ChatWindow 
+                conversation={activeConversation} 
+                messages={messages || []} 
+                onSend={handleSend} 
+                isLocked={isSessionLocked}
+                onBack={() => setShowChatOnMobile(false)}
+                onCallClick={() => {
+                  if (!isSessionLocked) window.open("https://zoom.us/j/your-meeting-room", '_blank');
+                }}
+              />
+            </div>
           </>
         ) : (
           <div className="flex-1 flex items-center justify-center text-dash-muted text-sm bg-white">Memuat percakapan...</div>

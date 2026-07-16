@@ -114,7 +114,7 @@ export default function Community() {
           />
         )}
         
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 max-h-[580px] md:max-h-[700px] overflow-y-auto pr-1">
           {postsLoading ? (
             <div className="flex flex-col items-center justify-center py-12 text-dash-muted gap-3">
               <span className="animate-spin size-8 border-4 border-dash-primary border-t-transparent rounded-full" />

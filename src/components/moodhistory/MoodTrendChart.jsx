@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import useFetch from '../../hooks/useFetch.js';
 import { getMoodTrend } from '../../services/moodHistoryService.js';
@@ -7,6 +8,17 @@ export default function MoodTrendChart({ selectedDate }) {
     () => getMoodTrend(selectedDate),
     [selectedDate]
   );
+
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   return (
     <div className="col-span-1 md:col-span-7 bg-white border border-auth-card rounded-xl2 p-[17px] flex flex-col shadow-sm">
@@ -28,7 +40,7 @@ export default function MoodTrendChart({ selectedDate }) {
                 axisLine={false}
                 tickLine={false}
                 tick={{ fontSize: 9, fill: '#6b93b8' }}
-                interval={0}
+                interval={isMobile ? 2 : 'preserveStartEnd'}
                 label={{ value: 'Tanggal', position: 'insideBottom', style: { fontSize: 11, fill: '#6b93b8', fontWeight: 500 }, offset: -15 }}
               />
               <YAxis

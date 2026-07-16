@@ -14,14 +14,14 @@ export function ResourcesHero({ hero }) {
           className="absolute inset-0 w-full h-full object-cover"
         />
       )}
-      <div className="relative z-20 max-w-2xl px-12 flex flex-col gap-4">
+      <div className="relative z-20 max-w-2xl px-6 md:px-12 py-8 md:py-0 flex flex-col gap-3 md:gap-4">
         <span className="inline-flex w-fit items-center gap-2 rounded-full bg-dash-primary px-4 py-1.5 shadow-sm">
           <span className="size-1.5 rounded-full bg-white animate-pulse" />
           <span className="text-[11px] font-bold tracking-wider text-white uppercase">{hero.badge}</span>
         </span>
-        <h2 className="text-[32px] leading-tight font-bold tracking-[-0.22px] text-white drop-shadow-md">{hero.title}</h2>
-        <p className="text-[16px] text-white/90 drop-shadow">{hero.description}</p>
-        <div className="mt-2 inline-flex w-fit items-center gap-2 rounded-lg bg-white px-6 py-3 text-dash-primary text-sm font-bold hover:bg-gray-50 transition-colors shadow-lg">
+        <h2 className="text-[24px] md:text-[32px] leading-snug font-bold tracking-[-0.22px] text-white drop-shadow-md">{hero.title}</h2>
+        <p className="text-sm md:text-[16px] text-white/90 drop-shadow">{hero.description}</p>
+        <div className="mt-1 md:mt-2 inline-flex w-fit items-center gap-2 rounded-lg bg-white px-4 md:px-6 py-2.5 md:py-3 text-dash-primary text-sm font-bold hover:bg-gray-50 transition-colors shadow-lg">
           {hero.cta}
           <ArrowRight size={16} />
         </div>
@@ -30,11 +30,11 @@ export function ResourcesHero({ hero }) {
   );
 
   return hero.id ? (
-    <Link to={`/resources/artikel/${hero.id}`} className="relative h-96 rounded-xl2 overflow-hidden flex items-center group shadow-sm hover:shadow transition-shadow">
+    <Link to={`/resources/artikel/${hero.id}`} className="relative min-h-[340px] md:h-96 rounded-xl2 overflow-hidden flex items-center group shadow-sm hover:shadow transition-shadow">
       {content}
     </Link>
   ) : (
-    <div className="relative h-96 rounded-xl2 overflow-hidden flex items-center shadow-sm">
+    <div className="relative min-h-[340px] md:h-96 rounded-xl2 overflow-hidden flex items-center shadow-sm">
       {content}
     </div>
   );

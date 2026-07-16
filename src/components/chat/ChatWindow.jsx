@@ -1,4 +1,3 @@
-import { useState, useEffect, useRef } from 'react';
 import { 
   Phone, 
   Video, 
@@ -11,15 +10,18 @@ import {
   AlertCircle, 
   CalendarDays,
   X,
-  FileText
+  FileText,
+  ArrowLeft
 } from 'lucide-react';
+
+import { useState, useEffect, useRef } from 'react';
 
 function getInitials(name) {
   if (!name) return 'KC';
   return name.split(' ').filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase();
 }
 
-export default function ChatWindow({ conversation, messages = [], onSend, onCallClick, isLocked = false }) {
+export default function ChatWindow({ conversation, messages = [], onSend, onCallClick, isLocked = false, onBack }) {
   const [draft, setDraft] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -106,8 +108,18 @@ export default function ChatWindow({ conversation, messages = [], onSend, onCall
   return (
     <div className="flex-1 flex flex-col bg-white min-w-0">
       {/* Header Chat */}
-      <div className="flex items-center justify-between px-6 py-3 border-b border-auth-card">
+      <div className="flex items-center justify-between px-4 md:px-6 py-3 border-b border-auth-card">
         <div className="flex items-center gap-3">
+          {onBack && (
+            <button
+              type="button"
+              onClick={onBack}
+              className="md:hidden p-1.5 rounded-lg hover:bg-[#f2f4f6] text-dash-muted transition-colors cursor-pointer"
+              aria-label="Kembali ke Daftar"
+            >
+              <ArrowLeft size={20} />
+            </button>
+          )}
           <div className="relative">
             <div className="size-10 rounded-full bg-dash-primary/10 border border-auth-card flex items-center justify-center text-xs font-bold text-dash-primary shrink-0">
               {conversation.avatarUrl ? (

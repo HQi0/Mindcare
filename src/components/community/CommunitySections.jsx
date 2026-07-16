@@ -125,6 +125,7 @@ export function PostComposer({ value, onChange, onSubmit, userAlias = 'Tamu Anon
 
 export function PostCard({ post, currentUserAlias, autoOpenComments = false }) {
   const [showComments, setShowComments] = useState(autoOpenComments);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [comments, setComments] = useState([]);
   const [commentsLoading, setCommentsLoading] = useState(false);
   const [commentText, setCommentText] = useState('');
@@ -178,6 +179,9 @@ export function PostCard({ post, currentUserAlias, autoOpenComments = false }) {
     }
   };
 
+  const isLongText = post.text && post.text.length > 200;
+  const displayText = isExpanded ? post.text : (isLongText ? post.text.slice(0, 200) + '...' : post.text);
+
   return (
     <article className="bg-white border border-auth-card rounded-xl p-6 flex flex-col gap-4 shadow-sm hover:shadow-md transition-shadow">
       <div className="flex items-center justify-between">
@@ -202,7 +206,16 @@ export function PostCard({ post, currentUserAlias, autoOpenComments = false }) {
       </div>
 
       <p className="text-[14px] leading-relaxed text-ink-muted whitespace-pre-wrap">
-        {post.text}
+        {displayText}
+        {isLongText && (
+          <button
+            type="button"
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="text-dash-primary hover:underline ml-1.5 font-semibold text-xs focus:outline-none cursor-pointer inline-block"
+          >
+            {isExpanded ? 'Sembunyikan' : 'Lihat Selengkapnya'}
+          </button>
+        )}
       </p>
 
       <div className="border-t border-auth-card pt-3 flex items-center gap-6">

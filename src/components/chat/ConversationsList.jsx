@@ -2,7 +2,7 @@ import { Search, ShieldAlert } from 'lucide-react';
 
 export default function ConversationsList({ conversations, activeId, onSelect }) {
   return (
-    <div className="w-80 shrink-0 border-r border-auth-card bg-dash-sidebar flex flex-col h-full">
+    <div className="w-full md:w-80 shrink-0 md:border-r border-auth-card bg-dash-sidebar flex flex-col h-full">
       <div className="p-4 border-b border-auth-card bg-[#f2f4f6]">
         <div className="relative">
           <Search size={13.5} className="absolute left-3 top-1/2 -translate-y-1/2 text-dash-muted" />

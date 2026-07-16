@@ -36,7 +36,7 @@ export default function Settings() {
 
   return (
     <div className="flex flex-col gap-6 max-w-5xl">
-      <div className="flex gap-6">
+      <div className="flex flex-col md:flex-row gap-6">
         <IdentityCard profile={profile} onEditClick={() => setShowEditModal(true)} />
         <WellbeingCard profile={profile} />
       </div>

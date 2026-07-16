@@ -4,7 +4,7 @@ import { Clock, Calendar, ThumbsUp, Share2, Bookmark } from 'lucide-react';
 export function ArticleHero({ article }) {
   if (!article) return null;
   return (
-    <div className="relative h-96 rounded-xl2 overflow-hidden bg-gradient-to-br from-dash-primary/25 via-dash-moodBlue/15 to-white flex items-end">
+    <div className="relative min-h-[350px] md:h-96 rounded-xl2 overflow-hidden bg-gradient-to-br from-dash-primary/25 via-dash-moodBlue/15 to-white flex items-end">
       {article.cover_image_url && (
         <img 
           src={article.cover_image_url} 
@@ -13,7 +13,7 @@ export function ArticleHero({ article }) {
         />
       )}
       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
-      <div className="relative z-10 p-10 max-w-4xl flex flex-col gap-4 w-full">
+      <div className="relative z-10 p-6 md:p-10 max-w-4xl flex flex-col gap-3 md:gap-4 w-full">
         <div className="flex gap-2">
           {article.badges.map((badge, i) => (
             <span
@@ -26,18 +26,18 @@ export function ArticleHero({ article }) {
             </span>
           ))}
         </div>
-        <h1 className="text-[36px] md:text-[42px] leading-tight font-bold tracking-tight text-white drop-shadow-md">
+        <h1 className="text-[24px] md:text-[36px] lg:text-[42px] leading-snug md:leading-tight font-bold tracking-tight text-white drop-shadow-md">
           {article.title}
         </h1>
-        <div className="flex items-center gap-6 pt-4">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 pt-2 md:pt-4">
           <div className="flex items-center gap-3">
-            <span className="size-12 rounded-full bg-dash-primary/30 border-2 border-white/20 shadow backdrop-blur-sm" />
+            <span className="size-10 md:size-12 rounded-full bg-dash-primary/30 border-2 border-white/20 shadow backdrop-blur-sm" />
             <div>
-              <p className="text-[16px] font-medium text-white">{article.author.name}</p>
-              <p className="text-[11px] font-bold uppercase tracking-wide text-white/70">{article.author.role}</p>
+              <p className="text-sm md:text-[16px] font-medium text-white">{article.author.name}</p>
+              <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-wide text-white/70">{article.author.role}</p>
             </div>
           </div>
-          <div className="border-l border-white/20 pl-6 flex gap-4 text-[13px] text-white/90">
+          <div className="border-t sm:border-t-0 sm:border-l border-white/10 sm:border-white/20 pt-3 sm:pt-0 sm:pl-6 flex gap-4 text-xs md:text-[13px] text-white/90">
             <span className="flex items-center gap-1.5"><Clock size={14} /> {article.readTime}</span>
             <span className="flex items-center gap-1.5"><Calendar size={14} /> {article.date}</span>
           </div>
@@ -54,7 +54,7 @@ export function ArticleContent({ article }) {
   const paragraphs = article.content.split('\n').filter(p => p.trim() !== '');
 
   return (
-    <article className="flex-1 bg-white border border-auth-card rounded-xl2 p-8 md:p-12 flex flex-col gap-6 shadow-sm">
+    <article className="flex-1 bg-white border border-auth-card rounded-xl2 p-5 md:p-12 flex flex-col gap-6 shadow-sm">
       {paragraphs.map((para, idx) => (
         <p key={idx} className="text-[16px] md:text-[17px] leading-relaxed text-dash-text whitespace-pre-wrap">
           {para}
@@ -93,12 +93,12 @@ export function RelatedArticles({ articles }) {
   if (!articles?.length) return null;
   return (
     <div className="border-t border-auth-card pt-12 flex flex-col gap-8">
-      <div className="flex items-end justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-dash-text">Artikel Terkait</h2>
           <p className="text-dash-muted mt-1">Perdalam pengetahuan Anda tentang kesejahteraan mental.</p>
         </div>
-        <Link to="/resources" className="text-dash-primary font-bold text-sm hover:underline">Lihat Semua</Link>
+        <Link to="/resources" className="text-dash-primary font-bold text-sm hover:underline w-fit">Lihat Semua</Link>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {articles.map((art) => (
