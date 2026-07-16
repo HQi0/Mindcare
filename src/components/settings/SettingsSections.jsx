@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { ShieldCheck, SlidersHorizontal, Laptop, Smartphone, Download, AlertTriangle, ChevronRight } from 'lucide-react';
 
 function getInitials(name) {
@@ -47,9 +48,12 @@ export function WellbeingCard({ profile }) {
         </div>
         <p className="text-xs text-dash-muted">{profile.wellbeingNote}</p>
       </div>
-      <button type="button" className="mt-6 rounded-lg border border-auth-card bg-[#f2f4f6] py-2.5 text-sm text-dash-primary">
+      <Link
+        to="/mood-history"
+        className="mt-6 flex items-center justify-center rounded-lg border border-auth-card bg-[#f2f4f6] py-2.5 text-sm font-medium text-dash-primary hover:bg-[#e2e6ea] transition-colors"
+      >
         Lihat Laporan Lengkap
-      </button>
+      </Link>
     </div>
   );
 }
@@ -116,7 +120,21 @@ export function AppPreferencesSection({ settings }) {
 
 const DEVICE_ICONS = { 'MacBook Pro - Safari': Laptop, 'iPhone 13 - App': Smartphone };
 
+import { useNavigate } from 'react-router-dom';
+import { logout } from '../../services/authService.js';
+
 export function SessionManagementCard({ sessions }) {
+  const navigate = useNavigate();
+
+  const handleGlobalLogout = async () => {
+    try {
+      await logout();
+      navigate('/login', { replace: true });
+    } catch (error) {
+      console.error('Error logging out:', error);
+    }
+  };
+
   if (!sessions?.length) return null;
   return (
     <div className="bg-white border border-auth-card rounded-xl p-6 flex flex-col gap-4">
@@ -137,7 +155,13 @@ export function SessionManagementCard({ sessions }) {
           );
         })}
       </div>
-      <button type="button" className="text-dash-primary text-base pt-2">Keluar dari Semua Perangkat</button>
+      <button 
+        type="button" 
+        onClick={handleGlobalLogout}
+        className="text-dash-danger text-base pt-2 hover:opacity-80 transition-opacity text-left"
+      >
+        Keluar dari Semua Perangkat
+      </button>
     </div>
   );
 }

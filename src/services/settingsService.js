@@ -1,4 +1,5 @@
 import { getCurrentDatabaseUser } from './authService.js';
+import { supabase } from '../lib/supabaseClient.js';
 
 const mockDelay = (data, ms = 300) =>
   new Promise((resolve) => setTimeout(() => resolve({ data }), ms));
@@ -7,8 +8,8 @@ const DUMMY_PROFILE = {
   alias: 'Pengguna MindCare',
   subtitle: 'Akun aktif',
   anonymousId: 'MC-7729',
-  wellbeingScore: 82,
-  wellbeingNote: 'Bagus! Kamu telah konsisten melakukan check-in selama 12 hari terakhir.',
+  wellbeingScore: 0,
+  wellbeingNote: 'Belum ada data yang cukup untuk menilai kesejahteraan Anda.',
 };
 
 const DUMMY_PRIVACY_SETTINGS = [
@@ -27,18 +28,102 @@ const DUMMY_SESSIONS = [
   { id: 's2', device: 'iPhone 13 - App', location: 'Sleman, Yogyakarta • 2 jam yang lalu' },
 ];
 
+const MOOD_SCORES = {
+  'sangat_senang': 100,
+  'senang': 80,
+  'netral': 60,
+  'sedih': 40,
+  'sangat_sedih': 20
+};
+
+async function calculateWellbeing(userId) {
+  // 1. Ambil data mood 14 hari terakhir
+  const fourteenDaysAgo = new Date();
+  fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+
+  const { data: moods } = await supabase
+    .from('mood_entries')
+    .select('mood')
+    .eq('user_id', userId)
+    .gte('created_at', fourteenDaysAgo.toISOString());
+
+  // 2. Ambil assessment terakhir (PHQ-9/GAD-7)
+  const { data: assessments } = await supabase
+    .from('assessments')
+    .select('severity_level')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(1);
+
+  // Jika tidak ada data sama sekali
+  if (!moods?.length && !assessments?.length) {
+    return {
+      score: 50,
+      note: 'Kami belum punya cukup data. Yuk, mulai rutin catat suasana hatimu!'
+    };
+  }
+
+  // Hitung rata-rata mood
+  let baseScore = 50;
+  if (moods?.length > 0) {
+    const totalScore = moods.reduce((acc, curr) => acc + (MOOD_SCORES[curr.mood] || 60), 0);
+    baseScore = Math.round(totalScore / moods.length);
+  }
+
+  // Penyesuaian dari assessment terakhir
+  let penalty = 0;
+  if (assessments?.length > 0) {
+    const severity = assessments[0].severity_level?.toLowerCase();
+    if (severity === 'berat') penalty = 20;
+    else if (severity === 'sedang') penalty = 10;
+  }
+
+  let finalScore = Math.max(0, Math.min(100, baseScore - penalty));
+
+  // Tentukan teks catatan (note)
+  let note = '';
+  if (finalScore >= 80) {
+    note = 'Kondisi Anda sangat baik! Pertahankan rutinitas check-in dan pikiran positif Anda.';
+  } else if (finalScore >= 60) {
+    note = 'Anda cukup stabil, luangkan sedikit waktu untuk relaksasi minggu ini.';
+  } else {
+    note = 'Sepertinya minggu ini cukup berat. Jangan ragu menjadwalkan sesi dengan konselor kami.';
+  }
+
+  return { score: finalScore, note };
+}
+
 export async function getProfile() {
   const storedUser = await getCurrentDatabaseUser();
-  const res = await mockDelay(
-    storedUser
-      ? {
-          ...DUMMY_PROFILE,
-          alias: storedUser.fullName || storedUser.name,
-          subtitle: storedUser.email || DUMMY_PROFILE.subtitle,
-        }
-      : DUMMY_PROFILE
-  );
-  return res.data;
+  if (!storedUser) return DUMMY_PROFILE;
+
+  try {
+    const { data: profileData, error } = await supabase
+      .from('profiles')
+      .select('full_name, anonymous_id')
+      .eq('id', storedUser.id)
+      .single();
+
+    if (error) throw error;
+
+    // Hitung wellbeing dinamis
+    const dynamicWellbeing = await calculateWellbeing(storedUser.id);
+
+    return {
+      alias: profileData?.full_name || storedUser.fullName || DUMMY_PROFILE.alias,
+      subtitle: storedUser.email || DUMMY_PROFILE.subtitle,
+      anonymousId: profileData?.anonymous_id || DUMMY_PROFILE.anonymousId,
+      wellbeingScore: dynamicWellbeing.score,
+      wellbeingNote: dynamicWellbeing.note,
+    };
+  } catch (err) {
+    console.error('Error fetching profile from Supabase:', err);
+    return {
+      ...DUMMY_PROFILE,
+      alias: storedUser?.fullName || DUMMY_PROFILE.alias,
+      subtitle: storedUser?.email || DUMMY_PROFILE.subtitle,
+    };
+  }
 }
 
 export async function getPrivacySettings() {
