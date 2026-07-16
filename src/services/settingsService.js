@@ -137,6 +137,33 @@ export async function getAppSettings() {
 }
 
 export async function getActiveSessions() {
-  const res = await mockDelay(DUMMY_SESSIONS);
-  return res.data;
+  const storedUser = await getCurrentDatabaseUser();
+  if (!storedUser) return DUMMY_SESSIONS;
+
+  try {
+    const { data, error } = await supabase
+      .from('user_sessions')
+      .select('id, device, last_active, created_at')
+      .eq('user_id', storedUser.id)
+      .eq('is_active', true)
+      .order('last_active', { ascending: false });
+
+    if (error) throw error;
+    if (!data || data.length === 0) return [];
+
+    return data.map((session, index) => ({
+      id: session.id,
+      device: session.device,
+      // For now, location is hidden as requested
+      location: index === 0 ? 'Sesi Saat Ini' : `Aktif sejak ${new Date(session.created_at).toLocaleDateString()}`
+    }));
+  } catch (err) {
+    console.error('Error fetching sessions from Supabase:', err);
+    // Tampilkan error langsung ke UI agar kita bisa melihat penyebabnya
+    return [{
+      id: 'error-1',
+      device: 'Database Error',
+      location: err.message || JSON.stringify(err)
+    }];
+  }
 }
