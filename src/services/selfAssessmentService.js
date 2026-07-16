@@ -125,14 +125,18 @@ export async function getAssessments() {
     return cards;
   }
 
-  // Fetch history for user
-  const { data } = await supabase
-    .from('assessments')
-    .select('*')
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: false });
-
-  const history = data || [];
+  let history = [];
+  if (user.id === 'usr_guest') {
+    history = JSON.parse(localStorage.getItem('mindcare_guest_assessments') || '[]');
+  } else {
+    // Fetch history for user
+    const { data } = await supabase
+      .from('assessments')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+    history = data || [];
+  }
 
   // PHQ-9 Check
   const lastPhq9 = history.find(h => h.type === 'phq9');
@@ -181,6 +185,27 @@ export async function saveAssessment(assessmentId, answersArray) {
   let recommendation = "Tetap jaga kesehatan mentalmu.";
   if (severity.level === 'sedang' || severity.level === 'berat' || severity.level === 'cukup berat') {
     recommendation = "Kami menyarankan Anda untuk berkonsultasi dengan profesional atau konselor kami.";
+  }
+
+  if (user.id === 'usr_guest') {
+    const dummyId = `guest-assessment-${Date.now()}`;
+    const newEntry = {
+      id: dummyId,
+      user_id: 'usr_guest',
+      type: testConfig.type,
+      answers: answersArray,
+      score: score,
+      severity_level: severity.level,
+      recommendation: recommendation,
+      created_at: new Date().toISOString()
+    };
+
+    // Save to localStorage
+    const current = JSON.parse(localStorage.getItem('mindcare_guest_assessments') || '[]');
+    current.push(newEntry);
+    localStorage.setItem('mindcare_guest_assessments', JSON.stringify(current));
+
+    return { success: true, result: newEntry, severityText: severity.text };
   }
 
   const { data, error } = await supabase

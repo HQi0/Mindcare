@@ -60,6 +60,11 @@ export function clearStoredAuth() {
 }
 
 export async function getCurrentDatabaseUser() {
+  const isGuest = localStorage.getItem('mindcare_guest') === 'true';
+  if (isGuest) {
+    return { id: 'usr_guest', name: 'Tamu Anonim', fullName: 'Tamu Anonim' };
+  }
+
   const { data, error } = await supabase.auth.getUser();
 
   if (error) {
@@ -155,10 +160,14 @@ export async function loginAsGuest() {
     user: { id: 'usr_guest', name: 'Tamu Anonim', fullName: 'Tamu Anonim' },
     token: 'dummy-guest-token',
   });
+  localStorage.setItem('mindcare_guest', 'true');
+  setStoredAuth({ token: res.data.token, user: res.data.user });
   return res.data;
 }
 
 export async function logout() {
+  localStorage.removeItem('mindcare_guest');
+  localStorage.removeItem('mindcare_guest_assessments');
   const { data } = await supabase.auth.getUser();
   if (data?.user) {
     // Set semua sesi user menjadi tidak aktif

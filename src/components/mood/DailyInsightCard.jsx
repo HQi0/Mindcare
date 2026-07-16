@@ -14,12 +14,6 @@ export default function DailyInsightCard() {
         <p className="text-[15px] leading-[21px] font-semibold text-white pb-1">
           {loading ? 'Memuat insight...' : insight?.text}
         </p>
-        <button
-          type="button"
-          className="self-start text-[11px] font-bold text-white border-b border-white/40 pb-0.5"
-        >
-          LIHAT ANALITIK LENGKAP
-        </button>
       </div>
     </div>
   );

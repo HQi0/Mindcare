@@ -1,5 +1,4 @@
-import { Routes, Route } from 'react-router-dom';
-import LandingPage from '../pages/LandingPage.jsx';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import Login from '../pages/auth/Login.jsx';
 import Register from '../pages/auth/Register.jsx';
 import DashboardLayout from '../layouts/DashboardLayout.jsx';
@@ -15,11 +14,11 @@ import Community from '../pages/Community.jsx';
 import BookingSession from '../pages/BookingSession.jsx';
 import Settings from '../pages/Settings.jsx';
 import EmergencyHelp from '../pages/EmergencyHelp.jsx';
-
+ 
 export default function AppRoutes() {
   return (
     <Routes>
-      <Route path="/" element={<LandingPage />} />
+      <Route path="/" element={<Navigate to="/login" replace />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
 
