@@ -19,6 +19,24 @@ function buildDisplayName(user) {
     .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
+function getDeviceInfo() {
+  const ua = navigator.userAgent || '';
+  let browser = 'Unknown Browser';
+  let os = 'Unknown OS';
+
+  if (ua.includes('Firefox')) browser = 'Firefox';
+  else if (ua.includes('Edg/')) browser = 'Edge';
+  else if (ua.includes('Chrome')) browser = 'Chrome';
+  else if (ua.includes('Safari')) browser = 'Safari';
+
+  if (ua.includes('Win')) os = 'Windows';
+  else if (ua.includes('Mac')) os = 'Mac/iOS';
+  else if (ua.includes('Linux')) os = 'Linux';
+  else if (ua.includes('Android')) os = 'Android';
+
+  return `${os} - ${browser}`;
+}
+
 function normalizeUser(user, fallbackEmail) {
   const email = user?.email ?? fallbackEmail ?? '';
   const fullName = buildDisplayName({ ...user, email });
@@ -71,6 +89,15 @@ export async function login(payload) {
 
   const user = normalizeUser(data.user);
   const token = data?.session?.access_token || '';
+
+  if (user.id !== 'usr_dummy') {
+    // Simpan sesi login ke tabel user_sessions
+    await supabase.from('user_sessions').insert({
+      user_id: user.id,
+      device: getDeviceInfo(),
+      is_active: true
+    });
+  }
 
   setStoredAuth({ token, user });
 
@@ -128,6 +155,15 @@ export async function loginAsGuest() {
 }
 
 export async function logout() {
+  const { data } = await supabase.auth.getUser();
+  if (data?.user) {
+    // Set semua sesi user menjadi tidak aktif
+    await supabase
+      .from('user_sessions')
+      .update({ is_active: false })
+      .eq('user_id', data.user.id);
+  }
+
   await supabase.auth.signOut();
   clearStoredAuth();
 }

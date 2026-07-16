@@ -141,7 +141,8 @@ export function SessionManagementCard({ sessions }) {
       <p className="text-base text-dash-text">Sesi Aktif</p>
       <div className="flex flex-col gap-4">
         {sessions.map((s) => {
-          const Icon = DEVICE_ICONS[s.device] || Laptop;
+          const isMobile = s.device?.includes('iOS') || s.device?.includes('Android');
+          const Icon = isMobile ? Smartphone : Laptop;
           return (
             <div key={s.id} className="flex items-center gap-3">
               <span className="size-10 rounded-lg bg-dash-primary/5 flex items-center justify-center shrink-0">
