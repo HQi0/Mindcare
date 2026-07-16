@@ -37,11 +37,11 @@ const DB_MOOD_TO_TAGS = {
   'sangat_senang': ['#SangatHappy', '#LuarBiasa']
 };
 
-export async function getCalendarData() {
+export async function getCalendarData(selectedDate) {
   const user = await getCurrentDatabaseUser();
   if (!user) return {};
 
-  const date = new Date();
+  const date = selectedDate ? new Date(selectedDate) : new Date();
   const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
   const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59);
 
@@ -65,20 +65,20 @@ export async function getCalendarData() {
   return result;
 }
 
-export async function getMoodTrend() {
+export async function getMoodTrend(selectedDate) {
   const user = await getCurrentDatabaseUser();
   if (!user) return [];
 
-  // Ambil data 30 hari terakhir
-  const today = new Date();
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(today.getDate() - 30);
+  const date = selectedDate ? new Date(selectedDate) : new Date();
+  const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
+  const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59);
 
   const { data } = await supabase
     .from('mood_entries')
     .select('mood, created_at')
     .eq('user_id', user.id)
-    .gte('created_at', thirtyDaysAgo.toISOString())
+    .gte('created_at', firstDay.toISOString())
+    .lte('created_at', lastDay.toISOString())
     .order('created_at', { ascending: true });
 
   if (!data || data.length === 0) {
@@ -97,18 +97,20 @@ export async function getMoodTrend() {
   });
 }
 
-export async function getMostFrequentMood() {
+export async function getMostFrequentMood(selectedDate) {
   const user = await getCurrentDatabaseUser();
   if (!user) return { mood: 'Belum ada data', count: 0, percentage: 0 };
 
-  const date = new Date();
+  const date = selectedDate ? new Date(selectedDate) : new Date();
   const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
+  const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59);
 
   const { data } = await supabase
     .from('mood_entries')
     .select('mood')
     .eq('user_id', user.id)
-    .gte('created_at', firstDay.toISOString());
+    .gte('created_at', firstDay.toISOString())
+    .lte('created_at', lastDay.toISOString());
 
   if (!data || data.length === 0) {
     return { mood: 'Belum ada data', count: 0, percentage: 0 };
@@ -150,14 +152,14 @@ async function getAverageMood(userId, startDate, endDate) {
   return totalScore / data.length;
 }
 
-export async function getImprovementStats() {
+export async function getImprovementStats(selectedDate) {
   const user = await getCurrentDatabaseUser();
   if (!user) return { percentage: 0, label: 'Belum cukup data', direction: 'up' };
 
-  const today = new Date();
-  const lastWeek = new Date();
+  const today = selectedDate ? new Date(selectedDate) : new Date();
+  const lastWeek = new Date(today.getTime());
   lastWeek.setDate(today.getDate() - 7);
-  const twoWeeksAgo = new Date();
+  const twoWeeksAgo = new Date(lastWeek.getTime());
   twoWeeksAgo.setDate(lastWeek.getDate() - 7);
 
   const currentAvg = await getAverageMood(user.id, lastWeek, today);
@@ -204,7 +206,7 @@ export async function getTimelineEntries() {
     .select('*')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
-    .limit(10);
+    .limit(100);
 
   if (!data || data.length === 0) return [];
 

@@ -63,6 +63,10 @@ export async function getCurrentDatabaseUser() {
   const { data, error } = await supabase.auth.getUser();
 
   if (error) {
+    // Jika tidak ada sesi aktif, jangan lempar error kasar, cukup kembalikan null (user tamu/belum login)
+    if (error.message?.includes('session missing') || error.status === 400 || error.status === 401) {
+      return null;
+    }
     throw new Error(error.message);
   }
 

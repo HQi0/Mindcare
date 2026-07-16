@@ -2,8 +2,11 @@ import { Smile, TrendingUp } from 'lucide-react';
 import useFetch from '../../hooks/useFetch.js';
 import { getMostFrequentMood, getImprovementStats } from '../../services/moodHistoryService.js';
 
-export function MostFrequentMoodCard() {
-  const { data } = useFetch(getMostFrequentMood, []);
+export function MostFrequentMoodCard({ selectedDate }) {
+  const { data } = useFetch(
+    () => getMostFrequentMood(selectedDate),
+    [selectedDate]
+  );
 
   return (
     <div className="bg-white border border-auth-card rounded-xl2 p-[17px] flex flex-col gap-4 shadow-sm">
@@ -29,8 +32,11 @@ export function MostFrequentMoodCard() {
   );
 }
 
-export function ImprovementCard() {
-  const { data } = useFetch(getImprovementStats, []);
+export function ImprovementCard({ selectedDate }) {
+  const { data } = useFetch(
+    () => getImprovementStats(selectedDate),
+    [selectedDate]
+  );
   const pct = data?.percentage ?? 0;
   // Ring progress sederhana pakai conic-gradient (tanpa dependency chart tambahan)
   const ringStyle = {

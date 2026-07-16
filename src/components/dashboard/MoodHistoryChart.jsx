@@ -42,7 +42,7 @@ export default function MoodHistoryChart() {
               <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(0,74,198,0.05)' }} />
               <Bar dataKey="value" radius={[6, 6, 0, 0]} maxBarSize={40}>
                 {history?.map((entry, index) => (
-                  <Cell key={entry.day} fill={index === 3 ? '#004ac6' : '#c7d9f5'} />
+                  <Cell key={index} fill={index === (history.length - 1) ? '#004ac6' : '#c7d9f5'} />
                 ))}
               </Bar>
             </BarChart>

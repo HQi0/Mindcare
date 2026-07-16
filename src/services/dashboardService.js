@@ -197,13 +197,54 @@ export async function getMoodHistory() {
      ];
   }
 
-  return data.map(entry => {
+  const todayKey = new Date().toDateString();
+  const grouped = {};
+  const todayEntries = [];
+
+  data.forEach((entry) => {
     const date = new Date(entry.created_at);
+    const dateKey = date.toDateString();
+
+    if (dateKey === todayKey) {
+      // Jika hari ini, jangan dirata-ratakan dulu agar entri hari ini muncul terpisah
+      todayEntries.push({
+        date: date,
+        day: days[date.getDay()],
+        value: DB_MOOD_TO_NUMBER[entry.mood] || 3
+      });
+    } else {
+      // Jika hari yang sudah lewat, rata-ratakan per hari agar tidak menumpuk
+      if (!grouped[dateKey]) {
+        grouped[dateKey] = {
+          date: date,
+          day: days[date.getDay()],
+          sum: 0,
+          count: 0,
+        };
+      }
+      grouped[dateKey].sum += DB_MOOD_TO_NUMBER[entry.mood] || 3;
+      grouped[dateKey].count += 1;
+    }
+  });
+
+  // Petakan entri masa lalu yang sudah dirata-ratakan
+  const pastEntries = Object.keys(grouped).map((key) => {
+    const item = grouped[key];
     return {
-      day: days[date.getDay()],
-      value: DB_MOOD_TO_NUMBER[entry.mood] || 3
+      date: item.date,
+      day: item.day,
+      value: Number((item.sum / item.count).toFixed(1)),
     };
   });
+
+  // Gabungkan dan urutkan secara kronologis berdasarkan objek Date asli
+  const combined = [...pastEntries, ...todayEntries];
+  combined.sort((a, b) => a.date - b.date);
+
+  return combined.map((item) => ({
+    day: item.day,
+    value: item.value,
+  }));
 }
 
 export async function getRecentActivities() {
