@@ -26,7 +26,7 @@ export default function ConversationsList({ conversations, activeId, onSelect })
               onClick={() => onSelect(conv.id)}
               className={`w-full text-left flex gap-3 px-4 py-4 border-b border-auth-card transition-colors ${
                 isActive 
-                  ? (isEmergency ? 'bg-red-650 border-l-4 border-l-red-600 pl-[13px]' : 'bg-[#0053db] border-l-4 border-l-dash-primary pl-[13px]') 
+                  ? (isEmergency ? 'bg-red-600 border-l-4 border-l-red-800 pl-[13px]' : 'bg-[#0053db] border-l-4 border-l-dash-primary pl-[13px]') 
                   : 'hover:bg-white'
               } ${isEmergency && !isActive ? 'bg-red-50/30' : ''}`}
             >
