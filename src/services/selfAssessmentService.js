@@ -128,7 +128,7 @@ export async function getAssessments() {
   // Fetch history for user
   const { data } = await supabase
     .from('assessments')
-    .select('type, created_at')
+    .select('*')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false });
 
@@ -141,6 +141,7 @@ export async function getAssessments() {
     cards[0].statusColor = 'text-dash-success';
     cards[0].progress = 100;
     cards[0].buttonLabel = 'Ulangi Asesmen';
+    cards[0].lastResult = lastPhq9;
   } else {
     cards[0].status = 'Belum Dimulai';
     cards[0].statusColor = 'text-dash-primary';
@@ -154,6 +155,7 @@ export async function getAssessments() {
     cards[1].statusColor = 'text-dash-success';
     cards[1].progress = 100;
     cards[1].buttonLabel = 'Ulangi Asesmen';
+    cards[1].lastResult = lastGad7;
   } else {
     cards[1].status = 'Belum Dimulai';
     cards[1].statusColor = 'text-dash-primary';
