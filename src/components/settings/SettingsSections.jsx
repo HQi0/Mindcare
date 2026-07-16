@@ -175,10 +175,7 @@ export function DangerZoneCard() {
         <p className="text-base text-dash-danger">Zona Berbahaya</p>
       </div>
       <div className="p-6 flex flex-col gap-4">
-        <button type="button" className="flex items-center justify-between text-base text-dash-text">
-          Unduh Seluruh Data Saya <Download size={16} />
-        </button>
-        <div className="border-t border-auth-card pt-4 flex flex-col gap-3">
+        <div className="flex flex-col gap-3">
           <button type="button" className="rounded-lg border border-dash-danger py-2.5 text-base text-dash-danger">
             Hapus Akun Permanen
           </button>
