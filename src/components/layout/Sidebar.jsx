@@ -23,8 +23,7 @@ const NAV_ITEMS = [
   { to: '/counselor-chat', label: 'Chat Konselor', icon: MessageCircle },
   { to: '/schedule-session', label: 'Booking Sesi', icon: CalendarClock },
   { to: '/community', label: 'Komunitas Anonim', icon: Users },
-  { to: '/profile', label: 'Profil', icon: User },
-  { to: '/settings', label: 'Pengaturan', icon: Settings },
+  { to: '/settings', label: 'Profil & Pengaturan', icon: Settings },
 ];
 
 /**
