@@ -3,7 +3,7 @@ import useFetch from '../../hooks/useFetch.js';
 import { getMoodHistory } from '../../services/dashboardService.js';
 
 function CustomTooltip({ active, payload, label }) {
-  if (!active || !payload?.length) return null;
+  if (!active || !payload?.length || !payload[0].value) return null;
   return (
     <div className="bg-white border border-dash-border rounded-lg px-3 py-2 shadow-sm">
       <p className="text-xs font-semibold text-dash-text">{label}</p>
@@ -14,6 +14,12 @@ function CustomTooltip({ active, payload, label }) {
 
 export default function MoodHistoryChart() {
   const { data: history, loading } = useFetch(getMoodHistory, []);
+
+  // Mendapatkan index hari ini (0 = Sen, ..., 6 = Min)
+  const todayIndex = (() => {
+    const day = new Date().getDay(); // 0: Minggu, 1: Senin, ..., 6: Sabtu
+    return day === 0 ? 6 : day - 1;
+  })();
 
   return (
     <div className="md:col-span-8 bg-white border border-dash-border rounded-xl2 p-6 flex flex-col gap-6 h-[350px]">
@@ -42,7 +48,7 @@ export default function MoodHistoryChart() {
               <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(0,74,198,0.05)' }} />
               <Bar dataKey="value" radius={[6, 6, 0, 0]} maxBarSize={40}>
                 {history?.map((entry, index) => (
-                  <Cell key={index} fill={index === (history.length - 1) ? '#004ac6' : '#c7d9f5'} />
+                  <Cell key={index} fill={index === todayIndex ? '#004ac6' : '#c7d9f5'} />
                 ))}
               </Bar>
             </BarChart>

@@ -70,8 +70,12 @@ export async function getMoodTrend(selectedDate) {
   if (!user) return [];
 
   const date = selectedDate ? new Date(selectedDate) : new Date();
-  const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
-  const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59);
+  const year = date.getFullYear();
+  const month = date.getMonth();
+
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0, 23, 59, 59);
+  const totalDays = new Date(year, month + 1, 0).getDate();
 
   const { data } = await supabase
     .from('mood_entries')
@@ -81,20 +85,31 @@ export async function getMoodTrend(selectedDate) {
     .lte('created_at', lastDay.toISOString())
     .order('created_at', { ascending: true });
 
-  if (!data || data.length === 0) {
-    return [];
+  const monthDays = [];
+  for (let d = 1; d <= totalDays; d++) {
+    monthDays.push({
+      date: String(d),
+      sum: 0,
+      count: 0
+    });
   }
 
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
-  
-  return data.map(entry => {
-    const d = new Date(entry.created_at);
-    // Asumsi chart intensity maksimal 10, sehingga score (1-5) dikali 2
-    return {
-      date: `${d.getDate()} ${months[d.getMonth()]}`,
-      intensity: (DB_MOOD_TO_SCORE[entry.mood] || 3) * 2 
-    };
-  });
+  if (data) {
+    data.forEach((entry) => {
+      const d = new Date(entry.created_at);
+      const dayNum = d.getDate();
+      const targetIdx = dayNum - 1;
+      if (targetIdx >= 0 && targetIdx < monthDays.length) {
+        monthDays[targetIdx].sum += DB_MOOD_TO_SCORE[entry.mood] || 3;
+        monthDays[targetIdx].count += 1;
+      }
+    });
+  }
+
+  return monthDays.map((d) => ({
+    date: d.date,
+    intensity: d.count > 0 ? Number((d.sum / d.count).toFixed(1)) : null
+  }));
 }
 
 export async function getMostFrequentMood(selectedDate) {

@@ -184,77 +184,48 @@ export async function getMoodHistory() {
   const user = await getCurrentDatabaseUser();
   if (!user) return [];
 
-  const sevenDaysAgo = new Date();
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  // Mendapatkan hari Senin di minggu saat ini
+  const today = new Date();
+  const dayOfWeek = today.getDay(); // 0: Minggu, 1: Senin, ..., 6: Sabtu
+  const monday = new Date(today);
+  const diff = today.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
+  monday.setDate(diff);
+  monday.setHours(0, 0, 0, 0);
 
   const { data, error } = await supabase
     .from('mood_entries')
     .select('mood, created_at')
     .eq('user_id', user.id)
-    .gte('created_at', sevenDaysAgo.toISOString())
+    .gte('created_at', monday.toISOString())
     .order('created_at', { ascending: true });
 
-  const days = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
-  
-  if (error || !data || data.length === 0) {
-     return [
-       { day: 'Sen', value: 3 },
-       { day: 'Sel', value: 3 },
-       { day: 'Rab', value: 3 },
-       { day: 'Kam', value: 3 },
-       { day: 'Jum', value: 3 },
-       { day: 'Sab', value: 3 },
-       { day: 'Min', value: 3 },
-     ];
-  }
+  const weekDays = [
+    { day: 'Sen', value: 0, sum: 0, count: 0 },
+    { day: 'Sel', value: 0, sum: 0, count: 0 },
+    { day: 'Rab', value: 0, sum: 0, count: 0 },
+    { day: 'Kam', value: 0, sum: 0, count: 0 },
+    { day: 'Jum', value: 0, sum: 0, count: 0 },
+    { day: 'Sab', value: 0, sum: 0, count: 0 },
+    { day: 'Min', value: 0, sum: 0, count: 0 }
+  ];
 
-  const todayKey = new Date().toDateString();
-  const grouped = {};
-  const todayEntries = [];
+  if (error || !data || data.length === 0) {
+    return weekDays.map(d => ({ day: d.day, value: 0 }));
+  }
 
   data.forEach((entry) => {
     const date = new Date(entry.created_at);
-    const dateKey = date.toDateString();
+    const dayIdx = date.getDay(); // 0: Minggu, 1: Senin, ..., 6: Sabtu
+    // Ubah ke index: 0 = Sen, ..., 6 = Min
+    const targetIdx = dayIdx === 0 ? 6 : dayIdx - 1;
 
-    if (dateKey === todayKey) {
-      // Jika hari ini, jangan dirata-ratakan dulu agar entri hari ini muncul terpisah
-      todayEntries.push({
-        date: date,
-        day: days[date.getDay()],
-        value: DB_MOOD_TO_NUMBER[entry.mood] || 3
-      });
-    } else {
-      // Jika hari yang sudah lewat, rata-ratakan per hari agar tidak menumpuk
-      if (!grouped[dateKey]) {
-        grouped[dateKey] = {
-          date: date,
-          day: days[date.getDay()],
-          sum: 0,
-          count: 0,
-        };
-      }
-      grouped[dateKey].sum += DB_MOOD_TO_NUMBER[entry.mood] || 3;
-      grouped[dateKey].count += 1;
-    }
+    weekDays[targetIdx].sum += DB_MOOD_TO_NUMBER[entry.mood] || 3;
+    weekDays[targetIdx].count += 1;
   });
 
-  // Petakan entri masa lalu yang sudah dirata-ratakan
-  const pastEntries = Object.keys(grouped).map((key) => {
-    const item = grouped[key];
-    return {
-      date: item.date,
-      day: item.day,
-      value: Number((item.sum / item.count).toFixed(1)),
-    };
-  });
-
-  // Gabungkan dan urutkan secara kronologis berdasarkan objek Date asli
-  const combined = [...pastEntries, ...todayEntries];
-  combined.sort((a, b) => a.date - b.date);
-
-  return combined.map((item) => ({
-    day: item.day,
-    value: item.value,
+  return weekDays.map((d) => ({
+    day: d.day,
+    value: d.count > 0 ? Number((d.sum / d.count).toFixed(1)) : 0
   }));
 }
 

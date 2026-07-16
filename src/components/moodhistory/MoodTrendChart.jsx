@@ -1,4 +1,4 @@
-import { LineChart, Line, XAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import useFetch from '../../hooks/useFetch.js';
 import { getMoodTrend } from '../../services/moodHistoryService.js';
 
@@ -22,12 +22,22 @@ export default function MoodTrendChart({ selectedDate }) {
           <div className="w-full h-full rounded-lg bg-auth-input animate-pulse" />
         ) : (
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={trend}>
+            <LineChart data={trend} margin={{ left: 15, right: 15, top: 10, bottom: 25 }}>
               <XAxis
                 dataKey="date"
                 axisLine={false}
                 tickLine={false}
+                tick={{ fontSize: 9, fill: '#6b93b8' }}
+                interval={0}
+                label={{ value: 'Tanggal', position: 'insideBottom', style: { fontSize: 11, fill: '#6b93b8', fontWeight: 500 }, offset: -15 }}
+              />
+              <YAxis
+                domain={[1, 5]}
+                tickCount={5}
+                axisLine={false}
+                tickLine={false}
                 tick={{ fontSize: 11, fill: '#6b93b8' }}
+                label={{ value: 'Skor Mood', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fontSize: 11, fill: '#6b93b8', fontWeight: 500 }, offset: 5 }}
               />
               <Tooltip
                 contentStyle={{ fontSize: 12, borderRadius: 8, borderColor: '#d1e4f5' }}
@@ -36,6 +46,7 @@ export default function MoodTrendChart({ selectedDate }) {
               <Line
                 type="monotone"
                 dataKey="intensity"
+                name="Skor Mood"
                 stroke="#004ac6"
                 strokeWidth={2.5}
                 dot={{ r: 4, fill: '#004ac6' }}
