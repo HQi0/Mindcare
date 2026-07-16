@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { HeartHandshake } from 'lucide-react';
+import { HeartHandshake, ArrowLeft } from 'lucide-react';
 
 /**
  * AuthCard adalah shell (bingkai) yang dipakai bersama oleh
@@ -10,7 +10,15 @@ import { HeartHandshake } from 'lucide-react';
  */
 export default function AuthCard({ mode, children }) {
   return (
-    <div className="bg-white border border-auth-card rounded-xl overflow-hidden shadow-[0px_4px_20px_0px_rgba(15,45,107,0.04)] w-full">
+    <div className="bg-white border border-auth-card rounded-xl overflow-hidden shadow-[0px_4px_20px_0px_rgba(15,45,107,0.04)] w-full relative">
+      <Link
+        to="/"
+        className="absolute top-4 left-4 text-auth-muted hover:text-auth-primary transition-colors"
+        title="Kembali ke Beranda"
+      >
+        <ArrowLeft size={18} />
+      </Link>
+
       {/* Header / Logo Area */}
       <div className="flex flex-col items-center gap-1 pt-8 pb-4 px-8">
         <span className="flex items-center justify-center w-12 py-1.5 rounded-lg bg-auth-primary/10 text-auth-primary">
