@@ -8,7 +8,8 @@ import {
   getCommunityRules, 
   createPost,
   generateAlias,
-  updateUserAlias
+  updateUserAlias,
+  deletePost
 } from '../services/communityService.js';
 import {
   CategoryChips,
@@ -28,6 +29,7 @@ export default function Community() {
   const [posts, setPosts] = useState([]);
   const [draft, setDraft] = useState('');
   const [userAlias, setUserAlias] = useState('Tamu Anonim');
+  const [currentUserId, setCurrentUserId] = useState(null);
   
   // Track selected trending post ID to isolate it in the feed
   const [selectedPostId, setSelectedPostId] = useState(null);
@@ -37,6 +39,7 @@ export default function Community() {
     async function initAlias() {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
+        setCurrentUserId(user.id);
         const defaultAlias = generateAlias(user.id);
         const storedAlias = localStorage.getItem(`mindcare_community_alias_${user.id}`);
         setUserAlias(storedAlias || defaultAlias);
@@ -70,7 +73,6 @@ export default function Community() {
   const filteredPosts = selectedPostId 
     ? posts.filter((p) => p.id === selectedPostId)
     : (activeCategory === 'Semua' ? posts : posts.filter((p) => p.category === activeCategory));
-
   const handleSubmit = async (category) => {
     if (!draft.trim()) return;
     try {
@@ -84,6 +86,19 @@ export default function Community() {
     }
   };
 
+  const handleDeletePost = async (postId) => {
+    const confirmed = window.confirm('Apakah Anda yakin ingin menghapus postingan ini?');
+    if (!confirmed) return;
+
+    try {
+      await deletePost(postId);
+      setPosts((prev) => prev.filter((p) => p.id !== postId));
+      refetchTrending();
+    } catch (err) {
+      console.error('Failed to delete post:', err);
+      alert('Gagal menghapus postingan: ' + err.message);
+    }
+  };
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
       <div className="md:col-span-2 flex flex-col gap-6">
@@ -131,6 +146,8 @@ export default function Community() {
                 key={post.id} 
                 post={post} 
                 currentUserAlias={userAlias} 
+                currentUserId={currentUserId}
+                onDelete={handleDeletePost}
                 autoOpenComments={post.id === selectedPostId} 
               />
             ))

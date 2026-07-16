@@ -352,3 +352,26 @@ export async function getCommunityRules() {
     'Ini bukan pengganti bantuan profesional untuk krisis mendesak.',
   ];
 }
+
+export async function deletePost(postId) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Anda harus masuk log untuk menghapus postingan.');
+
+  // Delete replies for this post first to prevent foreign key constraint issues
+  await supabase
+    .from('community_replies')
+    .delete()
+    .eq('post_id', postId);
+
+  // Delete the post
+  const { error } = await supabase
+    .from('community_posts')
+    .delete()
+    .eq('id', postId)
+    .eq('user_id', user.id);
+
+  if (error) {
+    console.error("Gagal menghapus postingan:", error.message);
+    throw new Error(error.message);
+  }
+}

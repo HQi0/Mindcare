@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { MessageCircle, Flag, ShieldCheck, TrendingUp, Send, Check } from 'lucide-react';
+import { MessageCircle, Flag, ShieldCheck, TrendingUp, Send, Check, Trash2 } from 'lucide-react';
 import { getReplies, createReply } from '../../services/communityService.js';
 
 export function CategoryChips({ categories, active, onSelect }) {
@@ -123,7 +123,7 @@ export function PostComposer({ value, onChange, onSubmit, userAlias = 'Tamu Anon
   );
 }
 
-export function PostCard({ post, currentUserAlias, autoOpenComments = false }) {
+export function PostCard({ post, currentUserAlias, currentUserId, onDelete, autoOpenComments = false }) {
   const [showComments, setShowComments] = useState(autoOpenComments);
   const [isExpanded, setIsExpanded] = useState(false);
   const [comments, setComments] = useState([]);
@@ -196,13 +196,16 @@ export function PostCard({ post, currentUserAlias, autoOpenComments = false }) {
             </p>
           </div>
         </div>
-        <button
-          type="button"
-          className="text-dash-muted hover:text-dash-danger transition-colors"
-          title="Laporkan Postingan"
-        >
-          <Flag size={14} />
-        </button>
+        {currentUserId && post.userId === currentUserId && (
+          <button
+            type="button"
+            onClick={() => onDelete && onDelete(post.id)}
+            className="text-dash-muted hover:text-dash-danger transition-colors cursor-pointer"
+            title="Hapus Postingan"
+          >
+            <Trash2 size={14} />
+          </button>
+        )}
       </div>
 
       <p className="text-[14px] leading-relaxed text-ink-muted whitespace-pre-wrap">
