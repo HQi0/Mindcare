@@ -121,8 +121,7 @@ export default function MoodCalendar({ currentDate, setCurrentDate }) {
           })}
       </div>
 
-      <div className="border-t border-auth-card pt-[17px] flex items-center justify-between flex-wrap gap-2">
-        <span className="text-[11px] font-bold uppercase text-dash-linkMuted">Legenda</span>
+      <div className="border-t border-auth-card pt-[17px] flex items-center flex-wrap gap-2">
         <div className="flex gap-3 flex-wrap">
           {MOOD_LEGEND.map((item) => (
             <div key={item.key} className="flex items-center gap-1.5">
